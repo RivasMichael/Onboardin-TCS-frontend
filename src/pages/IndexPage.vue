@@ -1,201 +1,163 @@
 <template>
-  <q-page class="flex column no-wrap">
-    
-    <q-toolbar class="bg-blue-grey-1 text-dark q-py-sm">
-      <q-avatar size="md" class="q-mr-sm" color="indigo-8" text-color="white">AI</q-avatar>
-      <q-toolbar-title class="text-subtitle1">
-        Asistente Inteligente
-        <div class="text-caption">Disponible 24/7. Siempre aquí para ayudarte</div>
-      </q-toolbar-title>
-      <q-btn flat round dense icon="close" @click="closeChat" aria-label="Cerrar chat" />
-      <q-btn flat round dense icon="more_vert" aria-label="Más opciones" />
-    </q-toolbar>
+  <q-page
+    class="window-height window-width row justify-center items-center"
+    style="background: linear-gradient(#F8F9F9, #EAECEE);"
+  >
+    <div class="column">
+      <q-card square bordered class="q-pa-md shadow-1" style="width: 420px;">
+        <!-- Contenido del Login -->
+        <q-card-section>
+          <div class="column items-center q-gutter-y-md q-mb-md">
+             <q-avatar size="80px" font-size="48px" color="primary" text-color="white" icon="o_chat" />
+            <div class="text-h5 text-weight-bold">BIENVENIDO AL ONBOARDING</div>
+            <p class="text-subtitle1 text-grey-8 text-center">Ingresa con tu correo corporativo para continuar</p>
+          </div>
+        </q-card-section>
 
-    <q-scroll-area ref="chatScrollArea" class="col q-pa-md q-gutter-y-md">
-      <q-chat-message
-        v-if="currentMessages.length === 0"
-        bg-color="grey-2"
-        text-color="black"
-      >
-        <q-avatar size="md" class="q-mr-sm" color="indigo-8" text-color="white">AI</q-avatar>
-        <div class="q-ml-sm">
-          ¡Hola María González! 👋 Soy tu asistente de integración disponible 24 horas al día, 7 días a la semana. Puedo ayudarte con preguntas sobre tu proceso de integración, fechas importantes, documentos y mucho más. ¿En qué puedo ayudarte hoy?
+        <q-card-section>
+          <q-form class="q-gutter-md">
+            <q-input v-model="email" type="email" label="Correo Electrónico *" outlined clearable>
+              <template v-slot:prepend><q-icon name="o_email" /></template>
+            </q-input>
+            <q-input v-model="password" type="password" label="Contraseña *" outlined clearable>
+              <template v-slot:prepend><q-icon name="o_lock" /></template>
+            </q-input>
+          </q-form>
+        </q-card-section>
+
+        <q-card-section>
+          <div class="row justify-between items-center q-mb-md">
+            <q-checkbox v-model="rememberMe" label="Recordar sesión" size="sm" />
+            <q-btn flat no-caps dense color="primary" label="¿Olvidaste tu contraseña?" class="text-weight-regular" @click="openForgotPasswordDialog" />
+          </div>
+          <q-btn color="dark" rounded size="lg" class="full-width" label="Iniciar Sesión" @click="login" />
+        </q-card-section>
+
+        <!-- Acceso Rápido para Pruebas -->
+        <q-separator inset class="q-my-sm" />
+        <q-card-section>
+           <div class="column items-center q-gutter-y-md">
+              <div class="text-grey-8">Acceso rápido para pruebas</div>
+              <q-btn-toggle v-model="testUserTab" no-caps rounded unelevated toggle-color="primary" color="white" text-color="primary" :options="testUserOptions" />
+              <q-card flat bordered class="full-width">
+                 <q-card-section>
+                  <div v-if="testUserTab === 'usuario'">
+                     <div class="row items-center no-wrap"><q-icon name="o_person" color="primary" class="q-mr-sm" /><div class="text-weight-bold">Nuevo Especialista</div></div>
+                    <div class="text-caption q-ml-lg">Email: nuevo.especialista@tcs.com</div>
+                    <div class="text-caption q-ml-lg">Contraseña: Password123</div>
+                  </div>
+                  <div v-if="testUserTab === 'admin'">
+                     <div class="row items-center no-wrap"><q-icon name="o_admin_panel_settings" color="purple" class="q-mr-sm" /><div class="text-weight-bold">Administrador RRHH</div></div>
+                    <div class="text-caption q-ml-lg">Email: admin@tcs.com</div>
+                    <div class="text-caption q-ml-lg">Contraseña: Admin123</div>
+                     <ul class="q-mt-sm q-pl-md text-caption text-grey-8" style="list-style-type: '✓ '"><li>Panel Admin incluye:</li><li>Dashboard de progreso</li><li>Gestión de documentos</li><li>Gestión de calendario</li></ul>
+                  </div>
+                   <q-btn outline rounded color="primary" class="full-width q-mt-sm" label="Autocompletar" @click="autofill" />
+                </q-card-section>
+              </q-card>
+          </div>
+        </q-card-section>
+      </q-card>
+    </div>
+
+    <!-- Diálogo de Recuperar Contraseña -->
+    <q-dialog v-model="showForgotPasswordDialog" persistent @hide="resetForgotPasswordDialog">
+      <q-card square class="shadow-1" style="width: 400px; border-radius: 12px;">
+        <!-- Vista 1: Formulario -->
+        <div v-if="forgotPasswordStep === 'form'" class="q-pa-xl column items-center">
+          <q-avatar size="70px" font-size="40px" color="deep-purple-2" text-color="primary" icon="o_lock_open" class="q-mb-md"/>
+          <div class="text-h6 text-weight-bold">Recuperar Contraseña</div>
+          <p class="text-grey-7 text-center q-mb-lg">Ingresa tu correo para recibir instrucciones de recuperación</p>
+          <q-input v-model="recoveryEmail" label="Correo Electrónico" outlined class="full-width" :error="!!emailError" :error-message="emailError">
+            <template v-slot:prepend><q-icon name="o_email" /></template>
+          </q-input>
+          <q-btn color="dark" unelevated size="lg" class="full-width q-mt-md" label="Enviar enlace de recuperación" @click="sendRecoveryLink" />
+          <q-btn flat color="primary" label="Cancelar" class="q-mt-sm" @click="showForgotPasswordDialog = false" />
         </div>
-        <div class="q-mt-sm row q-gutter-sm">
-          <q-btn flat round dense icon="event" label="Ver mi calendario" />
-          <q-btn flat round dense icon="person" label="Contactar supervisor" />
+
+        <!-- Vista 2: Éxito -->
+        <div v-if="forgotPasswordStep === 'success'" class="q-pa-xl column items-center">
+          <q-avatar size="70px" font-size="40px" color="green-1" text-color="positive" icon="o_check_circle" class="q-mb-md"/>
+          <div class="text-h6 text-weight-bold">Enlace Enviado</div>
+          <q-banner dense class="bg-green-1 text-positive q-my-md full-width" rounded><q-icon name="o_email" class="q-mr-sm"/>Se ha enviado un enlace de recuperación a tu correo.</q-banner>
+          <q-card flat bordered class="full-width">
+            <q-card-section>
+              <div class="text-weight-bold">Próximos pasos:</div>
+              <ol class="q-pl-md q-gutter-y-sm text-grey-8">
+                <li>Revisa tu bandeja de entrada</li>
+                <li>Haz clic en el enlace de recuperación (válido 15 min)</li>
+                <li>Define una nueva contraseña (mínimo 8 caracteres)</li>
+                <li>Confirma la nueva contraseña</li>
+              </ol>
+            </q-card-section>
+          </q-card>
+          <q-btn unelevated color="dark" label="Volver al inicio de sesión" class="full-width q-mt-md" @click="showForgotPasswordDialog = false" />
         </div>
-        <span class="q-message-stamp">13:46</span>
-      </q-chat-message>
-
-      <q-chat-message
-        v-for="msg in currentMessages"
-        :key="msg.timestamp"
-        :sent="msg.tipo === 'usuario'"
-        :bg-color="msg.tipo === 'usuario' ? 'primary' : 'grey-2'"
-        :text-color="msg.tipo === 'usuario' ? 'white' : 'black'"
-        :avatar="msg.tipo === 'bot' ? '/src/assets/ai_avatar.png' : ''"
-      >
-        <template v-slot:avatar v-if="msg.tipo === 'bot'">
-          <q-avatar size="md" class="q-mr-sm" color="indigo-8" text-color="white">AI</q-avatar>
-        </template>
-        <div style="white-space: pre-wrap;">{{ msg.contenido }}</div>
-        <span class="q-message-stamp">{{ formatDate(msg.timestamp) }}</span>
-      </q-chat-message>
-
-      <div v-if="currentMessages.length === 0" class="q-pa-md q-gutter-sm">
-        <q-item-label header class="text-h6">Preguntas frecuentes:</q-item-label>
-        <div class="row q-gutter-md">
-          <q-btn rounded outline color="primary" label="¿Cuándo empiezo?" @click="sendPredefinedMessage('¿Cuándo empiezo?')" />
-          <q-btn rounded outline color="primary" label="Mi supervisor" @click="sendPredefinedMessage('¿Quién es mi supervisor?')" />
-          <q-btn rounded outline color="primary" label="Ver calendario" @click="sendPredefinedMessage('Muéstrame mi calendario')" />
-          <q-btn rounded outline color="primary" label="Documentos" @click="sendPredefinedMessage('¿Qué documentos necesito?')" />
-          <q-btn rounded outline color="primary" label="Cursos" @click="sendPredefinedMessage('¿Qué cursos debo tomar?')" />
-          <q-btn rounded outline color="primary" label="Contactar supervisor" @click="sendPredefinedMessage('Necesito contactar a mi supervisor')" />
-        </div>
-      </div>
-
-    </q-scroll-area>
-
-    <q-footer bordered class="bg-white text-dark q-py-sm">
-      <q-toolbar>
-        <q-input
-          v-model="newMessage"
-          placeholder="Escribe tu pregunta aquí..."
-          outlined
-          rounded
-          dense
-          class="full-width"
-          @keyup.enter="sendMessage"
-        >
-          <template v-slot:append>
-            <q-btn icon="send" round dense flat color="primary" @click="sendMessage" />
-          </template>
-        </q-input>
-      </q-toolbar>
-    </q-footer>
+      </q-card>
+    </q-dialog>
 
   </q-page>
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
-import { api } from 'boot/axios'
-import { useRoute, useRouter } from 'vue-router'
-import { useQuasar } from 'quasar'
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
-defineOptions({ name: 'IndexPage' })
+defineOptions({ name: 'LoginPage' });
 
-const $q = useQuasar()
-const route = useRoute()
-const router = useRouter()
-const chatScrollArea = ref(null) // Referencia para el scroll
+const router = useRouter();
 
-// Estado del Chat
-const currentMessages = ref([])
-const newMessage = ref('')
-const userEmail = 'user@tcs.com' // Hardcodeado por ahora
-const selectedChatId = ref(null) // ID del chat de la URL
+// Estado del Login
+const email = ref('');
+const password = ref('');
+const rememberMe = ref(false);
+const testUserTab = ref('usuario');
 
-// --- Funciones del Chat ---
+// Lógica para el acceso rápido de pruebas
+const testUserOptions = [{label: 'Usuario', value: 'usuario', icon: 'o_person'},{label: 'Admin', value: 'admin', icon: 'o_admin_panel_settings'}];
+const testUsers = {
+  usuario: { email: 'nuevo.especialista@tcs.com', password: 'Password123' },
+  admin: { email: 'admin@tcs.com', password: 'Admin123' }
+};
+function autofill() {
+  const user = testUsers[testUserTab.value];
+  if (user) { email.value = user.email; password.value = user.password; }
+}
 
-// Cargar mensajes cuando el chat ID de la URL cambia
-watch(() => route.params.chatId, async (newChatId) => {
-  if (newChatId) {
-    selectedChatId.value = newChatId
-    await fetchMessages(newChatId)
-    scrollToBottom()
+// Lógica de Login
+function login() {
+  if (email.value === 'admin@tcs.com') router.push('/admin');
+  else router.push('/dashboard');
+}
+
+// Lógica para Recuperar Contraseña
+const showForgotPasswordDialog = ref(false);
+const forgotPasswordStep = ref('form'); // 'form' o 'success'
+const recoveryEmail = ref('');
+const emailError = ref('');
+
+function openForgotPasswordDialog() {
+  showForgotPasswordDialog.value = true;
+}
+
+function resetForgotPasswordDialog() {
+  forgotPasswordStep.value = 'form';
+  recoveryEmail.value = '';
+  emailError.value = '';
+}
+
+function sendRecoveryLink() {
+  if (!recoveryEmail.value.endsWith('@tcs.com')) {
+    emailError.value = 'Debes usar un correo corporativo';
   } else {
-    currentMessages.value = [] // Limpiar si no hay chat seleccionado
-    selectedChatId.value = null
-  }
-}, { immediate: true }) // Ejecutar inmediatamente al cargar la página
-
-// Cargar mensajes de una conversación específica (GET /api/chat/{correo}/{chatId})
-async function fetchMessages (chatId) {
-  try {
-    const emailEscaped = encodeURIComponent(userEmail)
-    const response = await api.get(`/chat/${emailEscaped}`)
-    const conversation = (response.data || []).find(c => (c.id || c._id || c.chatId) === chatId)
-    if (conversation) {
-      currentMessages.value = conversation.mensajes || conversation.messages || []
-    } else {
-      currentMessages.value = []
-    }
-  } catch (error) {
-    console.error('Error al cargar mensajes:', error)
-    $q.notify({ type: 'negative', message: 'No se pudieron cargar los mensajes del chat.' })
+    emailError.value = '';
+    forgotPasswordStep.value = 'success'; // Cambiar a la vista de éxito
   }
 }
 
-// Enviar un mensaje (Usuario -> API -> Bot) (POST /api/chat/{correo}/{chatId}/mensajes)
-async function sendMessage () {
-  if (!newMessage.value.trim() || !selectedChatId.value) return
-
-  const userMessage = {
-    tipo: 'usuario',
-    contenido: newMessage.value,
-    timestamp: new Date().toISOString()
-  }
-  currentMessages.value.push(userMessage)
-  scrollToBottom() // Bajar el scroll
-
-  const contentToSend = newMessage.value
-  newMessage.value = '' // Limpiar input
-
-  try {
-    const emailEscaped = encodeURIComponent(userEmail)
-    const response = await api.post(
-      `/chat/${emailEscaped}/${selectedChatId.value}/mensajes`,
-      { contenido: contentToSend }
-    )
-    currentMessages.value.push(response.data) // Añadir respuesta del bot
-    scrollToBottom() // Bajar el scroll de nuevo
-  } catch (error) {
-    console.error('Error al enviar mensaje a la IA:', error)
-    $q.notify({ type: 'negative', message: 'El Asistente no pudo responder.' })
-  }
-}
-
-// Enviar un mensaje predefinido (clic en botones)
-function sendPredefinedMessage (message) {
-  newMessage.value = message
-  sendMessage()
-}
-
-// Formatear la fecha para mostrar en los mensajes
-function formatDate (dateString) {
-  const options = { hour: '2-digit', minute: '2-digit' }
-  return new Date(dateString).toLocaleTimeString('es-ES', options)
-}
-
-// Bajar el scroll del área de chat
-async function scrollToBottom () {
-  await nextTick() // Esperar a que los mensajes se rendericen
-  if (chatScrollArea.value) {
-    chatScrollArea.value.setScrollPercentage('vertical', 1)
-  }
-}
-
-// Cerrar el chat (navegar a una página de inicio sin chat)
-function closeChat () {
-  router.push('/')
-}
 </script>
 
 <style lang="scss" scoped>
-.q-page {
-  height: 100vh; // Ocupa toda la altura de la ventana
-  display: flex;
-  flex-direction: column;
-}
-
-.q-toolbar {
-  min-height: 60px; // Altura del toolbar superior del chat
-}
-
-.q-footer {
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); // Sombra para el input
-  z-index: 10; // Para que esté encima de otros elementos
-}
+.q-card { border-radius: 12px; }
+.q-btn-toggle { border: 1px solid $primary; }
 </style>
