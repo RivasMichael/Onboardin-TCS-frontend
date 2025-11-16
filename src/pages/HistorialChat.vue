@@ -1,190 +1,145 @@
 <template>
-  <q-page>
-    <q-splitter v-model="splitterModel" style="height: calc(100vh - 88px)">
-      
-      <template v-slot:before>
-        <q-list bordered padding>
-          <q-item-label header>Historial de Chats</q-item-label>
-          
-          <q-item clickable v-ripple>
-            <q-item-section avatar>
-              <q-icon name="add" />
-            </q-item-section>
-            <q-item-section>Nueva conversación</q-item-section>
-          </q-item>
+  <q-page class="q-pa-md flex column no-wrap">
 
-          <q-item
-            v-for="convo in conversations"
-            :key="convo.id"
-            clickable
-            v-ripple
-            @click="selectConversation(convo)"
+    <!-- SECCIÓN DE MENSAJES IMPORTANTES (EXPANDIBLE) -->
+    <div class="q-mb-md">
+      <div class="row items-center justify-between">
+        <div class="text-h6 text-weight-bold">Mensajes importantes</div>
+        <div>
+          <q-chip dense color="primary" text-color="white">5 Nuevos</q-chip>
+          <q-btn
+            flat
+            round
+            dense
+            :icon="isMessagesExpanded ? 'o_expand_less' : 'o_expand_more'"
+            @click="isMessagesExpanded = !isMessagesExpanded"
+          />
+        </div>
+      </div>
+
+      <q-slide-transition>
+        <div v-if="isMessagesExpanded" class="q-gutter-y-md q-mt-sm">
+          <q-card
+            v-for="message in messages"
+            :key="message.id"
+            flat
+            bordered
+            class="message-card"
+            :style="`border-left: 5px solid ${message.color}`"
           >
-            <q-item-section>
-              {{ convo.titulo }}
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </template>
+            <q-card-section class="row items-center no-wrap">
+              <q-icon :name="message.icon" :color="message.color" size="sm" class="q-mr-md" />
+              <div class="col">
+                <div class="row items-center q-gutter-x-sm">
+                  <span class="text-weight-bold">{{ message.title }}</span>
+                  <q-chip dense :color="message.color" text-color="white" class="text-uppercase text-weight-bold">{{ message.priority }}</q-chip>
+                  <q-chip dense color="red-6" text-color="white" class="text-weight-bold">Nuevo</q-chip>
+                </div>
+                <p class="text-grey-8 q-mt-xs q-mb-none">{{ message.body }}</p>
+                <div class="row items-center q-gutter-x-md q-mt-sm">
+                  <q-btn flat dense no-caps padding="none" color="primary" label="Marcar como leído" />
+                  <span class="text-caption text-grey-6">{{ message.timestamp }}</span>
+                </div>
+              </div>
+              <q-space />
+              <div class="row items-center q-gutter-x-sm">
+                <q-btn flat round dense icon="o_favorite_border" size="sm" />
+                <q-btn flat round dense icon="o_close" size="sm" />
+              </div>
+            </q-card-section>
+          </q-card>
+        </div>
+      </q-slide-transition>
+    </div>
 
-      <template v-slot:after>
-        <q-scroll-area class="chat-messages">
-          <q-chat-message
-            v-for="msg in currentMessages"
-            :key="msg.timestamp"
-            :sent="msg.tipo === 'usuario'"
-            :bg-color="msg.tipo === 'usuario' ? 'primary' : 'grey-2'"
-            :text-color="msg.tipo === 'usuario' ? 'white' : 'black'"
-          >
-            <div style="white-space: pre-wrap;">{{ msg.contenido }}</div>
-          </q-chat-message>
-        </q-scroll-area>
+    <!-- SECCIÓN DEL ASISTENTE INTELIGENTE (CHAT) -->
+    <div v-if="!isMessagesExpanded" class="col column no-wrap">
+      <!-- Banner Superior del Asistente -->
+      <q-toolbar class="bg-deep-purple-5 text-white shadow-2">
+        <q-btn flat round dense icon="menu" @click="$emit('toggle-drawer')" />
+        <q-toolbar-title>
+          Asistente Inteligente
+          <div class="text-caption">Disponible 24/7. Siempre aquí para ayudarte</div>
+        </q-toolbar-title>
+        <q-chip dense color="white" text-color="dark">1 mensajes</q-chip>
+      </q-toolbar>
 
-        <q-input
-          class="chat-input"
-          v-model="newMessage"
-          placeholder="Escribe tu pregunta aquí..."
-          outlined
-          @keyup.enter="sendMessage"
-        >
-          <template v-slot:append>
-            <q-btn icon="send" round dense flat @click="sendMessage" />
+      <!-- Área de Mensajes del Chat -->
+      <q-scroll-area class="col q-pa-md">
+        <q-chat-message bg-color="grey-2">
+          <template v-slot:avatar>
+            <q-avatar class="q-mr-sm">
+              <img src="https://cdn-icons-png.flaticon.com/512/2593/2593641.png">
+            </q-avatar>
+          </template>
+          <div>¡Hola María González! 👋 Soy tu asistente... ¿En qué puedo ayudarte hoy?</div>
+          <div class="q-mt-sm row q-gutter-x-sm">
+            <q-btn outline dense no-caps color="primary" label="Ver mi calendario >" />
+            <q-btn outline dense no-caps color="primary" label="Contactar supervisor >" />
+          </div>
+          <q-chat-message-stamp>21:32</q-chat-message-stamp>
+        </q-chat-message>
+      </q-scroll-area>
+
+      <q-separator />
+
+      <!-- Preguntas Frecuentes y Área de Input -->
+      <div class="q-pa-md bg-white">
+        <div class="row items-center q-mb-md">
+          <q-icon name="o_hub" class="q-mr-sm" />
+          <div class="text-weight-medium">Preguntas frecuentes:</div>
+        </div>
+        <div class="row q-gutter-md q-mb-md">
+          <q-btn v-for="question in frequentQuestions" :key="question.label" :icon="question.icon" :label="question.label" outline rounded no-caps color="grey-8" class="col-auto" />
+        </div>
+        <q-input v-model="newMessage" placeholder="Escribe tu pregunta aquí..." outlined rounded class="full-width" @keyup.enter="sendMessage">
+          <template v-slot:after>
+            <q-btn round dense flat icon="send" color="primary" @click="sendMessage" />
           </template>
         </q-input>
-      </template>
+        <div class="text-caption text-grey-6 q-mt-xs text-center">Presiona Enter para enviar. Disponible 24/7</div>
+      </div>
+    </div>
 
-    </q-splitter>
   </q-page>
 </template>
 
 <script setup>
-// Importamos las herramientas de Vue y Quasar
-import { ref, onMounted } from 'vue'
-import { useQuasar } from 'quasar'
-// ¡Importamos axios para llamar a la API!
-import { api } from 'boot/axios'
+import { ref } from 'vue';
 
-// 1. DEFINIR EL "ESTADO" (Las variables que usa la página)
-// -----------------------------------------------------------------
+defineOptions({ name: 'DashboardChatPage' });
 
-// Para el <q-splitter>
-const splitterModel = ref(25) // 25% para el panel izquierdo
+defineEmits(['toggle-drawer']);
 
-// El correo del usuario (lo "quemamos" por ahora, hasta que el Login funcione)
-const userEmail = 'user@tcs.com'
+const isMessagesExpanded = ref(true);
+const newMessage = ref('');
 
-// La lista de chats (viene de la API)
-const conversations = ref([]) // Un array vacío
+const messages = ref([
+  { id: 1, icon: 'o_campaign', color: 'red-6', title: '¡Bienvenido a TCS!', priority: 'alta', body: 'Hola María González, estamos muy emocionados de tenerte en el equipo. Tu viaje de onboarding comienza aquí. ¡Éxito!', timestamp: '15 nov, 21:33' },
+  { id: 2, icon: 'o_pending_actions', color: 'red-6', title: '¡Solo faltan 5 días!', priority: 'alta', body: 'Tu primer día está cada vez más cerca. Asegúrate de tener lista tu documentación y revisa el calendario de actividades.', timestamp: '15 nov, 21:33' },
+  { id: 3, icon: 'o_star_border', color: 'red-6', title: '¡Hoy es tu primer día!', priority: 'alta', body: '¡Felicidades María González! Hoy comienza tu aventura en TCS. Te deseamos mucho éxito. ¡A dar lo mejor!', timestamp: '15 nov, 21:33' },
+  { id: 4, icon: 'o_lightbulb', color: 'orange-6', title: 'Prepárate para el éxito', priority: 'media', body: 'Recuerda que el equipo de RRHH y tu supervisor están aquí para apoyarte. No dudes en hacer preguntas.', timestamp: '15 nov, 21:33' },
+  { id: 5, icon: 'o_coffee', color: 'blue-6', title: 'Consejo del día', priority: 'baja', body: 'Aprovecha para conocer a tus compañeros durante el café. Las mejores conexiones se hacen en momentos informales.', timestamp: '15 nov, 21:33' }
+]);
 
-// El ID del chat que está abierto
-const selectedChatId = ref(null) 
+const frequentQuestions = ref([
+  { icon: 'o_calendar_today', label: '¿Cuándo empiezo?' },
+  { icon: 'o_supervisor_account', label: 'Mi supervisor' },
+  { icon: 'o_event', label: 'Ver calendario' },
+  { icon: 'o_description', label: 'Documentos' },
+  { icon: 'o_school', label: 'Cursos' },
+  { icon: 'o_support_agent', label: 'Contactar supervisor' }
+]);
 
-// Los mensajes del chat que está abierto
-const currentMessages = ref([]) // Un array vacío
-
-// El texto que el usuario está escribiendo
-const newMessage = ref('')
-
-const $q = useQuasar()
-
-// 2. DEFINIR LAS "ACCIONES" (Las funciones)
-// -----------------------------------------------------------------
-
-// ---
-// Copilot, ayúdame a crear la función 'fetchConversations'.
-// Debe usar 'api.get' para llamar al endpoint que probamos en Swagger:
-// GET /api/chat/{correo}
-// (Esta es la prueba de Swagger: image_d27a0b.png)
-// ---
-async function fetchConversations () {
-  try {
-    const emailEscaped = encodeURIComponent(userEmail)
-    const response = await api.get(`/chat/${emailEscaped}`)
-    conversations.value = response.data // Guardamos la lista de chats
-    
-    // Opcional: abrir el primer chat automáticamente
-    if (conversations.value.length > 0) {
-      selectConversation(conversations.value[0])
-    }
-  } catch (error) {
-    console.error('Error al cargar conversaciones:', error)
-    $q.notify({ type: 'negative', message: 'No se pudo cargar el historial.' })
-  }
+function sendMessage() {
+  if (!newMessage.value.trim()) return;
+  console.log('Enviando mensaje:', newMessage.value);
+  newMessage.value = '';
 }
-
-// ---
-// Copilot, esta función se llama cuando hago clic en un chat del historial.
-// Debe actualizar 'currentMessages' y 'selectedChatId'.
-// ---
-function selectConversation (convo) {
-  // Algunas APIs devuelven los mensajes en una propiedad llamada 'mensajes' o 'messages'
-  currentMessages.value = convo.mensajes || convo.messages || []
-  selectedChatId.value = convo.id
-}
-
-// ---
-// Copilot, ayúdame a crear la función 'sendMessage'.
-// Esta es la función más importante (IA).
-// Debe hacer lo que probamos en Swagger (image_d2d802.png):
-// 1. Tomar el texto de 'newMessage'.
-// 2. Llamar al endpoint 'POST /api/chat/{correo}/{chatId}/mensajes'.
-// 3. Añadir la respuesta del 'bot' a la lista 'currentMessages'.
-// ---
-async function sendMessage () {
-  if (!newMessage.value.trim() || !selectedChatId.value) return
-
-  const userMessage = {
-    tipo: 'usuario',
-    contenido: newMessage.value,
-    timestamp: new Date().toISOString()
-  }
-
-  // 1. Añadir el mensaje del usuario a la pantalla INMEDIATAMENTE
-  currentMessages.value.push(userMessage)
-  
-  const contentToApi = newMessage.value
-  newMessage.value = '' // Limpiar la caja de texto
-
-  try {
-    // 2. Llamar a la API (el "motor" con Ollama)
-    const emailEscaped = encodeURIComponent(userEmail)
-    const response = await api.post(
-      `/chat/${emailEscaped}/${selectedChatId.value}/mensajes`,
-      { contenido: contentToApi } // Este es el JSON que probaste en Swagger
-    )
-
-    // 3. Añadir la respuesta del bot a la pantalla
-    // Asumimos que la API devuelve un objeto de mensaje en response.data
-    currentMessages.value.push(response.data)
-
-  } catch (error) {
-    console.error('Error al llamar a la IA:', error)
-    $q.notify({ type: 'negative', message: 'El Asistente no pudo responder.' })
-  }
-}
-
-// 3. EJECUTAR AL CARGAR
-// -----------------------------------------------------------------
-// Copilot, usa 'onMounted' para llamar a 'fetchConversations'
-// automáticamente cuando la página se carga.
-// ---
-onMounted(() => {
-  fetchConversations()
-})
 </script>
 
 <style lang="scss" scoped>
-.chat-messages {
-  height: calc(100% - 70px); // Todo el alto menos la caja de texto
-  padding: 10px;
-}
-
-.chat-input {
-  height: 70px; // Alto fijo para la caja de texto
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  background-color: white;
-  padding: 10px;
+.message-card {
+  border-radius: 8px;
 }
 </style>
