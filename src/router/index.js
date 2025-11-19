@@ -33,5 +33,33 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     history: createHistory(process.env.VUE_ROUTER_BASE),
   })
 
+  // Route guard: simple role-based checks for /admin and /dashboard
+  Router.beforeEach(async (to, from, next) => {
+    // lazy-load auth store and restore from localStorage if needed
+    try {
+      const { useAuthStore } = await import('src/stores/auth')
+      const auth = useAuthStore()
+      auth.loadFromStorage()
+
+      const isAuth = auth.isAuthenticated
+
+      if (to.path.startsWith('/admin')) {
+        if (!isAuth) return next({ path: '/' })
+        if (!auth.isAdmin) return next({ path: '/dashboard' })
+        return next()
+      }
+
+      if (to.path.startsWith('/dashboard')) {
+        if (!isAuth) return next({ path: '/' })
+        return next()
+      }
+
+      return next()
+    } catch {
+      // If anything fails, allow navigation (fallback)
+      return next()
+    }
+  })
+
   return Router
 })

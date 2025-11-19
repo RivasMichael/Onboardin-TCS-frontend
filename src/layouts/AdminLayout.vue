@@ -22,7 +22,7 @@
 
       <q-tabs align="left" class="q-mt-sm" v-model="currentTab">
         <q-route-tab to="/admin/progreso" name="progreso" icon="o_show_chart" label="Progreso" />
-        <q-route-tab to="/admin/mensajes" name="mensajes" icon="o_chat" label="Mensajes" />
+        <q-route-tab to="/admin/actividades" name="actividades" icon="o_event" label="Actividades" />
         <q-route-tab to="/admin/documentos" name="documentos" icon="o_folder" label="Documentos" />
         <q-route-tab to="/admin/calendario" name="calendario" icon="o_calendar_today" label="Calendario" />
       </q-tabs>
