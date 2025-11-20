@@ -37,7 +37,7 @@
         </q-input>
         <q-select
           v-model="statusFilter"
-          :options="['Todos los estados', 'Activo', 'En Riesgo', 'Completado', 'Pendiente']"
+          :options="['Todos los estados', 'Activo', 'En Riesgo', 'Completado']"
           outlined
           dense
           class="col-auto"
@@ -102,101 +102,40 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { api } from 'boot/axios';
-import { useQuasar } from 'quasar';
+import { ref, computed } from 'vue';
 
 defineOptions({ name: 'AdminDashboardPage' });
 
-const $q = useQuasar();
-
 const summaries = ref([
-  { label: 'Total Nuevos', value: 0, icon: 'o_person_add', color: 'blue-5' },
-  { label: 'Activos', value: 0, icon: 'o_trending_up', color: 'green-5' },
-  { label: 'En Riesgo', value: 0, icon: 'o_warning', color: 'red-5' },
-  { label: 'Completados', value: 0, icon: 'o_check_circle', color: 'purple-5' },
-  { label: 'Progreso Prom.', value: '0%', icon: 'o_functions', color: 'deep-purple-5' },
+  { label: 'Total Nuevos', value: 5, icon: 'o_person_add', color: 'blue-5' },
+  { label: 'Activos', value: 3, icon: 'o_trending_up', color: 'green-5' },
+  { label: 'En Riesgo', value: 1, icon: 'o_warning', color: 'red-5' },
+  { label: 'Completados', value: 1, icon: 'o_check_circle', color: 'purple-5' },
+  { label: 'Progreso Prom.', value: '62%', icon: 'o_functions', color: 'deep-purple-5' },
 ]);
 
 const searchQuery = ref('');
 const statusFilter = ref('Todos los estados');
-const users = ref([]);
 
-const getInitials = (name) => {
-  if (!name) return '';
-  return name.split(' ').map(n => n[0]).join('').toUpperCase();
-};
-
-const capitalize = (s) => {
-  if (typeof s !== 'string' || s.length === 0) return '';
-  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-};
-
-onMounted(async () => {
-  try {
-    const response = await api.get('/Usuario/panel');
-
-    users.value = response.data.map(user => ({
-      id: user.correo, // Usamos correo como ID temporal
-      initials: getInitials(user.nombre),
-      name: user.nombre,
-      email: user.correo,
-      status: capitalize(user.estado),
-      supervisor: 'N/A', // Este dato no viene del endpoint /panel
-      startDate: new Date(user.fechaInicio).toLocaleDateString(),
-      timeSinceStart: 'N/A', // Placeholder
-      progress: {
-        total: Math.floor(Math.random() * 100),
-        activities: { completed: Math.floor(Math.random() * 7) + 1, total: 7 },
-        documents: { completed: Math.floor(Math.random() * 6) + 1, total: 6 }
-      }
-    }));
-
-    updateSummaries();
-
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    $q.notify({
-      color: 'negative',
-      position: 'top',
-      message: 'Error al cargar los usuarios. Revisa la consola del navegador.',
-      icon: 'o_report_problem'
-    });
-  }
-});
-
-const updateSummaries = () => {
-  if (!users.value) return;
-  const totalNuevos = users.value.length;
-  const activos = users.value.filter(u => u.status === 'Activo').length;
-  const enRiesgo = users.value.filter(u => u.status === 'En Riesgo').length;
-  const completados = users.value.filter(u => u.status === 'Completado').length;
-  const totalProgress = users.value.reduce((acc, u) => acc + u.progress.total, 0);
-  const progresoProm = totalNuevos > 0 ? Math.round(totalProgress / totalNuevos) : 0;
-
-  summaries.value = [
-    { label: 'Total Nuevos', value: totalNuevos, icon: 'o_person_add', color: 'blue-5' },
-    { label: 'Activos', value: activos, icon: 'o_trending_up', color: 'green-5' },
-    { label: 'En Riesgo', value: enRiesgo, icon: 'o_warning', color: 'red-5' },
-    { label: 'Completados', value: completados, icon: 'o_check_circle', color: 'purple-5' },
-    { label: 'Progreso Prom.', value: `${progresoProm}%`, icon: 'o_functions', color: 'deep-purple-5' },
-  ];
-};
+const users = ref([
+  { id: 1, initials: 'MG', name: 'María González', email: 'nueva.especialista@tcs.com', status: 'Activo', supervisor: 'Juan Pérez', startDate: 'Hoy', timeSinceStart: '2h', progress: { total: 40, activities: { completed: 2, total: 7 }, documents: { completed: 3, total: 6 } } },
+  { id: 2, initials: 'LM', name: 'Laura Martínez', email: 'laura.martinez@tcs.com', status: 'En Riesgo', supervisor: 'Juan Pérez', startDate: 'Hace 2 días', timeSinceStart: '18h', progress: { total: 25, activities: { completed: 1, total: 7 }, documents: { completed: 2, total: 6 } } },
+  { id: 3, initials: 'DL', name: 'Diego López', email: 'diego.lopez@tcs.com', status: 'Activo', supervisor: 'Ana Martínez', startDate: 'Hace 5 días', timeSinceStart: '1h', progress: { total: 60, activities: { completed: 4, total: 7 }, documents: { completed: 5, total: 6 } } },
+  { id: 4, initials: 'CR', name: 'Carlos Ramírez', email: 'test@tcs.com', status: 'Activo', supervisor: 'Ana Martínez', startDate: 'Hace 1 semana', timeSinceStart: '30 min', progress: { total: 85, activities: { completed: 6, total: 7 }, documents: { completed: 6, total: 6 } } },
+  { id: 5, initials: 'ST', name: 'Sofia Torres', email: 'sofia.torres@tcs.com', status: 'Completado', supervisor: 'Juan Pérez', startDate: 'Hace 2 semanas', timeSinceStart: '1d', progress: { total: 100, activities: { completed: 7, total: 7 }, documents: { completed: 6, total: 6 } } },
+]);
 
 const getStatusColor = (status) => {
   switch (status) {
     case 'Activo': return { chipBg: 'green-2', chipText: 'green-8' };
     case 'En Riesgo': return { chipBg: 'red-2', chipText: 'red-8' };
     case 'Completado': return { chipBg: 'grey-3', chipText: 'grey-8' };
-    case 'Pendiente': return { chipBg: 'orange-2', chipText: 'orange-8' };
     default: return { chipBg: 'grey-3', chipText: 'grey-8' };
   }
 };
 
 const filteredUsers = computed(() => {
-  if (!users.value) return [];
   return users.value.filter(user => {
-    if (!user.name || !user.email) return false;
     const searchLower = searchQuery.value.toLowerCase();
     const matchesSearch = user.name.toLowerCase().includes(searchLower) || user.email.toLowerCase().includes(searchLower);
     const matchesStatus = statusFilter.value === 'Todos los estados' || user.status === statusFilter.value;
