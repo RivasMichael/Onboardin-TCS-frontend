@@ -24,7 +24,7 @@ const routes = [
     children: [
       { path: '', redirect: '/admin/progreso' },
       { path: 'progreso', component: () => import('../pages/AdminDashboardPage.vue') },
-      { path: 'mensajes', component: () => import('../pages/AdminMessagesPage.vue') },
+      { path: 'actividades', component: () => import('../pages/AdminMessagesPage.vue') },
       { path: 'documentos', component: () => import('../pages/AdminDocumentsPage.vue') },
       { path: 'calendario', component: () => import('../pages/AdminCalendarPage.vue') } // <-- NUEVA RUTA
     ]
