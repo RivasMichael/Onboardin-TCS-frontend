@@ -60,7 +60,7 @@
             no-caps
             :icon-right="item.type === 'document' ? 'o_download' : 'o_open_in_new'"
             :label="item.type === 'document' ? 'Descargar' : 'Abrir enlace'"
-            @click="handleAction(item.url)"
+            @click="handleAction(item.url, item)"
           />
         </q-card-actions>
       </q-card>
@@ -77,18 +77,34 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { api } from 'src/boot/axios';
 
 defineOptions({ name: 'DocumentosPage' });
 
 const searchQuery = ref('');
 const categoryFilter = ref('Todos');
 
-const items = ref([
-  { id: 1, title: 'Manual de Bienvenida', description: 'Guía completa para nuevos empleados con información sobre la empresa, cultura y beneficios.', type: 'document', category: 'Onboarding', url: 'https://www.w3.org/Consortium/cepc/cepc-2018-09.pdf' },
-  { id: 2, title: 'Políticas de Seguridad', description: 'Documento con las políticas de seguridad de la información y buenas prácticas.', type: 'document', category: 'Seguridad', url: 'https://www.ou.edu/content/dam/provost/documents/security-policy.pdf' },
-  { id: 3, title: 'Portal Interno', description: 'Acceso al portal interno de recursos humanos y autogestión.', type: 'link', category: 'Herramientas', url: 'https://portal.example.com' },
-]);
+const items = ref([]);
+
+async function loadDocuments() {
+  try {
+    const response = await api.get('/documentos');
+    items.value = response.data.map(doc => ({
+      id: doc.id,
+      title: doc.titulo,
+      description: doc.descripcion,
+      type: 'document',
+      category: doc.categoria,
+      url: `/documentos/${doc.id}/download`
+    }));
+    console.log('Documentos cargados:', items.value);
+  } catch {
+    // Puedes mostrar un notify si quieres
+  }
+}
+
+onMounted(loadDocuments);
 
 const filterOptions = computed(() => {
   const categories = new Set(items.value.map(item => item.category));
@@ -104,8 +120,20 @@ const filteredItems = computed(() => {
   });
 });
 
-function handleAction(url) {
-  window.open(url, '_blank');
+async function handleAction(url, item) {
+  try {
+    const response = await api.get(url, { responseType: 'blob' });
+    const blob = new Blob([response.data], { type: response.headers['content-type'] });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = (item.title || 'documento') + '.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(link.href);
+  } catch {
+    // Puedes mostrar un notify si quieres
+  }
 }
 
 </script>
