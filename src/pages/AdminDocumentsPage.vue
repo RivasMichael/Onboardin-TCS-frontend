@@ -82,6 +82,28 @@
               <q-select v-model="activeDocument.category" :options="['Onboarding', 'Seguridad', 'Herramientas', 'Recursos Humanos', 'Políticas']" label="Categoría *" outlined dense class="col" />
             </div>
             <q-input v-model="activeDocument.url" label="URL / Enlace *" placeholder="https://..." outlined dense v-if="activeDocument.type === 'Enlace'" />
+            <!-- PDF upload area -->
+            <div v-if="activeDocument.type === 'PDF'" class="q-mt-md">
+              <div class="q-pa-md" style="border: 2px dashed var(--q-color-grey-4); border-radius: 6px; text-align:center;">
+                <input ref="pdfInput" type="file" accept="application/pdf" style="display:none" @change="onPdfSelected" />
+                <div v-if="!pdfFile">
+                  <q-icon name="o_upload" size="36px" class="q-mb-sm" />
+                  <div class="text-subtitle2">Archivo PDF (máximo 10MB)</div>
+                  <div class="text-caption text-grey-7 q-mt-xs">Haz clic para seleccionar un archivo</div>
+                  <q-btn dense flat label="Seleccionar archivo" class="q-mt-sm" @click="triggerPdfInput" />
+                </div>
+                <div v-else class="row items-center justify-between">
+                  <div class="col">
+                    <div class="text-weight-medium">{{ pdfFile.name }}</div>
+                    <div class="text-caption text-grey-7">{{ readableSize(pdfFile.size) }}</div>
+                    <div v-if="pdfError" class="text-negative text-caption q-mt-xs">{{ pdfError }}</div>
+                  </div>
+                  <div class="col-auto">
+                    <q-btn flat icon="o_close" color="negative" @click="removePdf" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </q-form>
         </q-card-section>
 
@@ -138,8 +160,53 @@ const showDialog = ref(false);
 const getNewDocObject = () => ({ id: null, name: '', description: '', category: 'Onboarding', type: 'PDF', url: '' });
 const activeDocument = ref(getNewDocObject());
 
+// PDF file handling
+const pdfFile = ref(null);
+const pdfError = ref('');
+const pdfInput = ref(null);
+const MAX_PDF_SIZE = 10 * 1024 * 1024; // 10MB
+
+function onPdfSelected(e) {
+  pdfError.value = '';
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  if (file.type !== 'application/pdf') {
+    pdfError.value = 'El archivo debe ser un PDF.';
+    pdfFile.value = null;
+    e.target.value = null;
+    return;
+  }
+  if (file.size > MAX_PDF_SIZE) {
+    pdfError.value = 'El archivo supera el tamaño máximo de 10MB.';
+    pdfFile.value = null;
+    e.target.value = null;
+    return;
+  }
+  pdfFile.value = file;
+}
+
+function removePdf() {
+  pdfFile.value = null;
+  pdfError.value = '';
+  if (pdfInput.value) pdfInput.value.value = null;
+}
+
+function triggerPdfInput() {
+  if (pdfInput.value) pdfInput.value.click();
+}
+
+function readableSize(bytes) {
+  if (!bytes) return '';
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 1) return mb.toFixed(2) + ' MB';
+  const kb = bytes / 1024;
+  return kb.toFixed(2) + ' KB';
+}
+
 function openCreateDialog() {
   activeDocument.value = getNewDocObject();
+  pdfFile.value = null;
+  pdfError.value = '';
   showDialog.value = true;
 }
 
@@ -149,11 +216,24 @@ function saveDocument() {
     return;
   }
 
+  // If PDF selected, ensure file is valid
+  if (activeDocument.value.type === 'PDF') {
+    if (!pdfFile.value) {
+      $q.notify({ color: 'negative', message: 'Por favor, selecciona un archivo PDF (máx 10MB).', icon: 'o_warning' });
+      return;
+    }
+    // For demo, store the filename into url field (in real app upload to backend and save URL)
+    activeDocument.value.url = pdfFile.value.name;
+  }
+
   // Lógica para añadir el nuevo documento
   activeDocument.value.id = Date.now();
   documents.value.unshift({ ...activeDocument.value });
 
   showDialog.value = false;
+  // clear pdf selection
+  pdfFile.value = null;
+  pdfError.value = '';
   $q.notify({ color: 'positive', message: 'Documento guardado correctamente', icon: 'o_check' });
 }
 
