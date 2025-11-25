@@ -12,12 +12,13 @@
 
         <div class="q-gutter-sm row items-center no-wrap">
           <div class="text-right">
-            <div class="text-weight-bold">Administrador RRHH</div>
-            <div class="text-caption">Administrador</div>
+            <div class="text-weight-bold">{{ nombreUsuario }}</div>
+            <div class="text-caption">{{ rolUsuario }}</div>
           </div>
-          <q-avatar size="lg" color="secondary" text-color="white">AR</q-avatar>
+          <q-btn round flat icon="account_circle" aria-label="Ver perfil" @click="abrirPerfilCard" style="cursor:pointer" />
           <q-btn round flat icon="o_logout" aria-label="Salir" @click="logout" />
         </div>
+        <UserProfileCard v-if="showPerfilCard" @close="showPerfilCard = false" />
       </q-toolbar>
 
       <q-tabs align="left" class="q-mt-sm" v-model="currentTab">
@@ -36,17 +37,32 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from 'src/stores/auth';
+import UserProfileCard from 'src/components/UserProfileCard.vue';
 
 defineOptions({ name: 'AdminLayout' });
 
 const router = useRouter();
+const auth = useAuthStore();
 const currentTab = ref('progreso');
+const showPerfilCard = ref(false);
+
+onMounted(() => {
+  auth.loadFromStorage();
+});
+
+const nombreUsuario = computed(() => auth.usuario?.nombre || 'Usuario');
+const rolUsuario = computed(() => auth.usuario?.rol || 'admin');
 
 function logout() {
   // Navegar de vuelta a la página de login
   router.push('/');
+}
+
+function abrirPerfilCard() {
+  showPerfilCard.value = true;
 }
 
 </script>

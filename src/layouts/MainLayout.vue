@@ -14,10 +14,11 @@
         <q-space />
 
         <div class="q-gutter-sm row items-center no-wrap">
-          <span class="text-weight-bold">María González</span>
-          <q-avatar size="lg" color="primary" text-color="white">MG</q-avatar>
+          <span class="text-weight-bold">{{ nombreUsuario }}</span>
+          <q-btn round flat icon="account_circle" aria-label="Ver perfil" @click="abrirPerfilCard" style="cursor:pointer" />
           <q-btn round flat icon="o_logout" aria-label="Salir" @click="logout" />
         </div>
+        <UserProfileCard v-if="showPerfilCard" @close="showPerfilCard = false" />
       </q-toolbar>
 
       <q-tabs align="left" class="q-mt-sm" v-model="currentTab">
@@ -71,14 +72,24 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from 'src/stores/auth';
+import UserProfileCard from 'src/components/UserProfileCard.vue';
 
 defineOptions({ name: 'MainLayout' });
 
 const router = useRouter();
+const auth = useAuthStore();
 const leftDrawerOpen = ref(false);
 const currentTab = ref('chat');
+const showPerfilCard = ref(false);
+
+onMounted(() => {
+  auth.loadFromStorage();
+});
+
+const nombreUsuario = computed(() => auth.usuario?.nombre || 'Usuario');
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
@@ -87,6 +98,10 @@ function toggleLeftDrawer() {
 function logout() {
   // Navegar de vuelta a la página de login
   router.push('/');
+}
+
+function abrirPerfilCard() {
+  showPerfilCard.value = true;
 }
 
 </script>

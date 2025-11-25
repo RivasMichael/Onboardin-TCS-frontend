@@ -67,7 +67,6 @@
     <q-dialog v-model="showDialog">
       <AdminUploadDocument @close="showDialog = false" @uploaded="onDocumentUploaded" />
     </q-dialog>
-    </q-dialog>
 
   </q-page>
 </template>
@@ -133,48 +132,6 @@ const filteredDocuments = computed(() => {
 // --- Lógica de Creación/Edición ---
 const showDialog = ref(false);
 
-// PDF file handling
-const pdfFile = ref(null);
-const pdfError = ref('');
-const pdfInput = ref(null);
-const MAX_PDF_SIZE = 10 * 1024 * 1024; // 10MB
-
-function onPdfSelected(e) {
-  pdfError.value = '';
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-  if (file.type !== 'application/pdf') {
-    pdfError.value = 'El archivo debe ser un PDF.';
-    pdfFile.value = null;
-    e.target.value = null;
-    return;
-  }
-  if (file.size > MAX_PDF_SIZE) {
-    pdfError.value = 'El archivo supera el tamaño máximo de 10MB.';
-    pdfFile.value = null;
-    e.target.value = null;
-    return;
-  }
-  pdfFile.value = file;
-}
-
-function removePdf() {
-  pdfFile.value = null;
-  pdfError.value = '';
-  if (pdfInput.value) pdfInput.value.value = null;
-}
-
-function triggerPdfInput() {
-  if (pdfInput.value) pdfInput.value.click();
-}
-
-function readableSize(bytes) {
-  if (!bytes) return '';
-  const mb = bytes / (1024 * 1024);
-  if (mb >= 1) return mb.toFixed(2) + ' MB';
-  const kb = bytes / 1024;
-  return kb.toFixed(2) + ' KB';
-}
 
 function openCreateDialog() {
   showDialog.value = true;
@@ -184,7 +141,6 @@ async function onDocumentUploaded() {
   showDialog.value = false;
   await loadDocuments();
   $q.notify({ color: 'positive', message: 'Documento subido y listado actualizado', icon: 'o_check' });
-}
 }
 
 
