@@ -147,7 +147,7 @@ async function onDocumentUploaded() {
 // --- Lógica de Eliminación ---
 function confirmDelete(doc) {
   $q.dialog({
-    title: 'Figma',
+    title: 'Eliminar documento',
     message: `¿Estás seguro de eliminar "${doc.name}"?`,
     cancel: {
       label: 'Cancelar',
@@ -159,11 +159,13 @@ function confirmDelete(doc) {
       flat: true
     },
     persistent: true
-  }).onOk(() => {
-    const index = documents.value.findIndex(d => d.id === doc.id);
-    if (index !== -1) {
-      documents.value.splice(index, 1);
+  }).onOk(async () => {
+    try {
+      await api.delete(`/documentos/${doc.id}`);
+      await loadDocuments();
       $q.notify({ color: 'positive', message: 'Documento eliminado correctamente', icon: 'o_check' });
+    } catch {
+      $q.notify({ color: 'negative', message: 'Error al eliminar el documento', icon: 'o_block' });
     }
   });
 }

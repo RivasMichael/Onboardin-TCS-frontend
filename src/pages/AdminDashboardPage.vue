@@ -102,7 +102,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { api } from 'src/boot/axios';
 
 defineOptions({ name: 'AdminDashboardPage' });
 
@@ -117,13 +118,38 @@ const summaries = ref([
 const searchQuery = ref('');
 const statusFilter = ref('Todos los estados');
 
-const users = ref([
-  { id: 1, initials: 'MG', name: 'María González', email: 'nueva.especialista@tcs.com', status: 'Activo', supervisor: 'Juan Pérez', startDate: 'Hoy', timeSinceStart: '2h', progress: { total: 40, activities: { completed: 2, total: 7 }, documents: { completed: 3, total: 6 } } },
-  { id: 2, initials: 'LM', name: 'Laura Martínez', email: 'laura.martinez@tcs.com', status: 'En Riesgo', supervisor: 'Juan Pérez', startDate: 'Hace 2 días', timeSinceStart: '18h', progress: { total: 25, activities: { completed: 1, total: 7 }, documents: { completed: 2, total: 6 } } },
-  { id: 3, initials: 'DL', name: 'Diego López', email: 'diego.lopez@tcs.com', status: 'Activo', supervisor: 'Ana Martínez', startDate: 'Hace 5 días', timeSinceStart: '1h', progress: { total: 60, activities: { completed: 4, total: 7 }, documents: { completed: 5, total: 6 } } },
-  { id: 4, initials: 'CR', name: 'Carlos Ramírez', email: 'test@tcs.com', status: 'Activo', supervisor: 'Ana Martínez', startDate: 'Hace 1 semana', timeSinceStart: '30 min', progress: { total: 85, activities: { completed: 6, total: 7 }, documents: { completed: 6, total: 6 } } },
-  { id: 5, initials: 'ST', name: 'Sofia Torres', email: 'sofia.torres@tcs.com', status: 'Completado', supervisor: 'Juan Pérez', startDate: 'Hace 2 semanas', timeSinceStart: '1d', progress: { total: 100, activities: { completed: 7, total: 7 }, documents: { completed: 6, total: 6 } } },
-]);
+const users = ref([]);
+
+onMounted(async () => {
+  try {
+    const resp = await api.get('/Usuario/panel');
+    users.value = (resp.data || []).map(u => ({
+      id: u.codigoEmpleado || u.correo,
+      initials: u.nombre ? u.nombre.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) : '',
+      name: u.nombre,
+      email: u.correo,
+      status: u.estado,
+      role: u.rol,
+      office: u.oficina,
+      department: u.departamento,
+      position: u.cargo,
+      startDate: u.fechaInicio ? new Date(u.fechaInicio).toLocaleDateString('es-PE') : '',
+      progress: {
+        total: (u.progresoTotal !== undefined) ? u.progresoTotal : 0,
+        activities: {
+          completed: (u.actividadesCompletadas !== undefined) ? u.actividadesCompletadas : 0,
+          total: (u.actividadesTotales !== undefined) ? u.actividadesTotales : 0
+        },
+        documents: {
+          completed: (u.documentosCompletados !== undefined) ? u.documentosCompletados : 0,
+          total: (u.documentosTotales !== undefined) ? u.documentosTotales : 0
+        }
+      }
+    }));
+  } catch {
+    users.value = [];
+  }
+});
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -136,11 +162,15 @@ const getStatusColor = (status) => {
 
 const filteredUsers = computed(() => {
   return users.value.filter(user => {
-    const searchLower = searchQuery.value.toLowerCase();
-    const matchesSearch = user.name.toLowerCase().includes(searchLower) || user.email.toLowerCase().includes(searchLower);
-    const matchesStatus = statusFilter.value === 'Todos los estados' || user.status === statusFilter.value;
-    return matchesSearch && matchesStatus;
-  });
+          const searchLower = searchQuery.value.toLowerCase();
+          const matchesSearch = (user.name || '').toLowerCase().includes(searchLower) || (user.email || '').toLowerCase().includes(searchLower);
+          // Si el filtro está vacío o es "Todos los estados", mostrar todos
+          if (!statusFilter.value || statusFilter.value === 'Todos los estados') {
+            return matchesSearch;
+          }
+          // Comparar estado ignorando mayúsculas/minúsculas
+          return matchesSearch && ((user.status || '').toLowerCase() === statusFilter.value.toLowerCase());
+        });
 });
 
 </script>
