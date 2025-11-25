@@ -22,12 +22,8 @@
       </q-toolbar>
 
       <q-tabs align="left" class="q-mt-sm" v-model="currentTab">
-        <q-route-tab to="/dashboard/chat/general" name="chat" icon="o_chat" label="Chat">
-          <q-badge color="red" floating>3</q-badge>
-        </q-route-tab>
-        <q-route-tab to="/dashboard/actividades" name="actividades" icon="o_pending_actions" label="Actividades">
-          <q-badge color="red" floating>5</q-badge>
-        </q-route-tab>
+        <q-route-tab to="/dashboard/chat/general" name="chat" icon="o_chat" label="Chat" />
+        <q-route-tab to="/dashboard/actividades" name="actividades" icon="o_pending_actions" label="Actividades" />
         <q-route-tab to="/dashboard/cursos" name="cursos" icon="o_school" label="Cursos" />
         <q-route-tab to="/dashboard/documentos" name="documentos" icon="o_description" label="Documentos" />
         <q-route-tab to="/dashboard/supervisor" name="supervisor" icon="o_supervisor_account" label="Supervisor" />

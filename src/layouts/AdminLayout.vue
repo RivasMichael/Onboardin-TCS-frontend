@@ -25,7 +25,7 @@
         <q-route-tab to="/admin/progreso" name="progreso" icon="o_show_chart" label="Progreso" />
         <q-route-tab to="/admin/actividades" name="actividades" icon="o_event" label="Actividades" />
         <q-route-tab to="/admin/documentos" name="documentos" icon="o_folder" label="Documentos" />
-        <q-route-tab to="/admin/calendario" name="calendario" icon="o_calendar_today" label="Calendario" />
+        <!-- Calendario eliminado -->
       </q-tabs>
     </q-header>
 
