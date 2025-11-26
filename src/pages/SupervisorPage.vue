@@ -1,60 +1,99 @@
 <template>
-  <q-page class="q-pa-md" style="background-color: #f8f9fa;">
+  <q-page class="q-pa-lg bg-grey-2">
+    <div class="column q-gutter-y-md" style="max-width: 800px; margin: 0 auto;">
 
-    <!-- Cabecera del Perfil -->
-    <q-card flat class="q-mb-md text-white supervisor-card">
-      <q-card-section class="text-center">
-        <q-avatar size="100px" class="shadow-10">
-          <q-avatar size="95px" color="primary" text-color="white">
-            {{ supervisor.nombre ? supervisor.nombre.split(' ').map(n => n[0]).join('').toUpperCase() : '?' }}
-          </q-avatar>
-        </q-avatar>
-        <div class="text-h5 q-mt-md">{{ supervisor.nombre }}</div>
-        <div class="text-subtitle1">{{ supervisor.cargo }}</div>
-        <q-chip square color="blue-4" text-color="white" icon="o_star">Supervisor</q-chip>
-      </q-card-section>
-      <q-banner dense class="bg-white bg-opacity-10 text-center q-py-sm">
-        <q-icon name="o_info" class="q-mr-sm" /> {{ supervisor.mensajeBienvenida }}
-      </q-banner>
-    </q-card>
+      <!-- Title -->
+      <div class="text-h4 text-weight-medium">Mi Supervisor</div>
+      <p class="text-subtitle1 text-grey-7">Conoce a tu supervisor y mantente en contacto</p>
 
-    <!-- Información de contacto -->
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section>
-        <div class="text-weight-bold">Información de contacto</div>
-        <q-list separator class="q-mt-sm">
-          <q-item>
+      <!-- Supervisor Card -->
+      <q-card flat bordered>
+        <q-card-section>
+          <!-- Supervisor Header -->
+          <q-item class="q-mb-md">
+            <q-item-section avatar>
+              <q-avatar color="primary" text-color="white" size="60px">
+                {{ getInitials(supervisor.nombre) }}
+              </q-avatar>
+            </q-item-section>
             <q-item-section>
-              <q-item-label caption>Email</q-item-label>
-              <q-item-label>{{ supervisor.correo }}</q-item-label>
+              <q-item-label class="text-weight-bold text-h6">{{ supervisor.nombre }}</q-item-label>
+              <q-item-label caption class="text-body1">{{ supervisor.cargo }}</q-item-label>
             </q-item-section>
           </q-item>
-          <q-item v-if="supervisor.telefono">
-            <q-item-section>
-              <q-item-label caption>Teléfono</q-item-label>
-              <q-item-label>{{ supervisor.telefono }}</q-item-label>
-            </q-item-section>
-          </q-item>
-          <q-item v-if="supervisor.departamento">
-            <q-item-section>
-              <q-item-label caption>Departamento</q-item-label>
-              <q-item-label>{{ supervisor.departamento }}</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-card-section>
-    </q-card>
 
-    <!-- Horario de atención -->
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section>
-        <div class="text-weight-bold">Horario de atención</div>
-        <div class="bg-green-1 q-pa-md rounded-borders q-mt-md">
-          <q-badge rounded color="green" class="q-mr-sm"/>
-          <span class="text-weight-medium">{{ supervisor.horario }}</span>
-        </div>
-      </q-card-section>
-    </q-card>
+          <!-- Welcome Message -->
+          <q-banner inline-actions class="bg-indigo-1 text-indigo-8 q-py-md rounded-borders">
+            <template v-slot:avatar>
+              <q-icon name="o_info" size="sm" />
+            </template>
+            <!-- Este mensaje de bienvenida es estático, basado en el nuevo diseño. -->
+            ¡Bienvenido/a al equipo! Estoy aquí para apoyarte en tu proceso de integración. No dudes en contactarme si tienes alguna pregunta.
+          </q-banner>
+
+          <!-- Contact Info -->
+          <div class="text-weight-bold q-mt-lg q-mb-sm">Información de contacto</div>
+          <q-list padding>
+            <q-item>
+              <q-item-section avatar top>
+                <q-icon color="grey-7" name="o_email" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label caption>Email</q-item-label>
+                <q-item-label>{{ supervisor.correo }}</q-item-label>
+              </q-item-section>
+            </q-item>
+             <q-item>
+              <q-item-section avatar top>
+                <q-icon color="grey-7" name="o_phone" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label caption>Teléfono</q-item-label>
+                <q-item-label>{{ supervisor.telefono }}</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section avatar top>
+                <q-icon color="grey-7" name="o_schedule" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label caption>Horario de atención</q-item-label>
+                <q-item-label>{{ supervisor.horario }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+
+        <!-- Action Button -->
+        <q-separator />
+        <q-card-section>
+          <q-btn
+            class="full-width"
+            color="dark"
+            size="lg"
+            rounded
+            no-caps
+            icon="o_send"
+            label="Enviar correo"
+            :href="'mailto:' + supervisor.correo"
+          />
+        </q-card-section>
+      </q-card>
+
+      <!-- Tips Card -->
+      <q-card flat bordered>
+        <q-card-section>
+          <div class="text-weight-bold">Consejos para tu primer contacto</div>
+           <ul class="q-pl-lg q-mt-sm text-grey-8">
+            <li>Preséntate brevemente y muestra tu entusiasmo por unirte al equipo</li>
+            <li>Pregunta sobre las expectativas para tu primer día</li>
+            <li>No dudes en consultar tus dudas sobre el proceso de onboarding</li>
+            <li>Confirma la hora y lugar de tu primer día de trabajo</li>
+          </ul>
+        </q-card-section>
+      </q-card>
+
+    </div>
   </q-page>
 </template>
 
@@ -93,24 +132,27 @@ onMounted(() => {
       };
     });
 });
+
+const getInitials = (name) => {
+  if (!name) return '?';
+  return name.split(' ').map(n => n[0]).join('').toUpperCase();
+}
 </script>
 
 <style lang="scss" scoped>
-.supervisor-card {
-  background: linear-gradient(to right, #8e2de2, #4a00e0) !important;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+.q-page {
+  background-color: #f5f7fa !important;
 }
-.bg-opacity-10 {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+.q-card {
+  border-radius: 12px;
 }
-.q-card-section {
-  font-size: 1.08em;
+
+ul {
+  list-style: disc;
 }
-.q-item-label[caption] {
-  color: #1976d2;
-  font-weight: 500;
-}
-.q-item-label:not([caption]) {
-  color: #333;
+
+li {
+  padding-left: 8px;
+  margin-bottom: 8px;
 }
 </style>

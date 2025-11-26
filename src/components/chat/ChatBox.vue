@@ -159,11 +159,21 @@ const sendMessage = async () => {
       pregunta: messageText
     })
 
-    // Agregar respuesta del asistente
+    // Mostrar solo la pregunta y la respuesta generada por Ollama
+    const r = response.data
+    let msg = ''
+    if (r.pregunta) {
+      msg += `<b>Pregunta:</b> ${r.pregunta}<br>`
+    }
+    if (r.respuesta) {
+      msg += `<b>Respuesta:</b> ${r.respuesta}`
+    } else {
+      msg += 'No pude obtener una respuesta'
+    }
     messages.value.push({
       id: messages.value.length + 1,
       sender: 'assistant',
-      text: response.data.respuesta || response.data || 'No pude obtener una respuesta',
+      text: msg,
       timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
     })
   } catch (err) {
