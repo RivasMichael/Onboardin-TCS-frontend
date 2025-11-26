@@ -3,34 +3,28 @@
     <!-- Mensajes -->
     <q-scroll-area class="col q-pa-md">
       <div class="q-gutter-md">
-        <div v-for="msg in messages" :key="msg.id" class="message-container" :class="msg.sender">
-          <q-chat-message
-            :sent="msg.sender === 'user'"
-            :bg-color="msg.sender === 'user' ? 'primary' : 'grey-2'"
-            text-color="white"
+        <div
+          v-for="msg in messages"
+          :key="msg.id"
+          class="message-container q-mb-md"
+          :class="msg.sender"
+        >
+          <q-card
+            flat
+            bordered
+            class="q-pa-md"
+            :class="msg.sender === 'user' ? 'bg-blue-1 justify-end' : 'bg-grey-2 justify-start'"
           >
-            <template v-if="msg.sender === 'assistant'" v-slot:avatar>
-              <q-avatar class="q-mr-sm">
-                <img src="https://cdn-icons-png.flaticon.com/512/2593/2593641.png">
+            <div class="row items-center q-gutter-sm">
+              <q-avatar v-if="msg.sender === 'assistant'" size="32px" class="q-mr-sm">
+                <img src="https://cdn-icons-png.flaticon.com/512/2593/2593641.png" />
               </q-avatar>
-            </template>
-            {{ msg.text }}
-            <q-chat-message-stamp>{{ msg.timestamp }}</q-chat-message-stamp>
-          </q-chat-message>
-
-          <!-- Acciones si es del asistente -->
-          <div v-if="msg.sender === 'assistant' && msg.actions" class="row q-gutter-x-sm q-mt-md">
-            <q-btn
-              v-for="action in msg.actions"
-              :key="action.label"
-              outline
-              dense
-              no-caps
-              color="primary"
-              :label="action.label"
-              @click="$emit('action', action.value)"
-            />
-          </div>
+              <div class="col">
+                <div class="text-body1">{{ msg.text }}</div>
+                <div class="text-caption text-grey-6 q-mt-xs">{{ msg.timestamp }}</div>
+              </div>
+            </div>
+          </q-card>
         </div>
       </div>
     </q-scroll-area>
@@ -40,7 +34,10 @@
     <!-- Input área -->
     <div class="q-pa-md bg-white">
       <!-- Documentos seleccionados info -->
-      <div v-if="selectedDocuments && selectedDocuments.length > 0" class="q-mb-md q-pa-sm bg-blue-1 rounded-borders">
+      <div
+        v-if="selectedDocuments && selectedDocuments.length > 0"
+        class="q-mb-md q-pa-sm bg-blue-1 rounded-borders"
+      >
         <div class="text-caption text-weight-bold q-mb-xs">Documentos activos:</div>
         <div class="row q-gutter-xs">
           <q-chip
@@ -62,7 +59,7 @@
         outlined
         rounded
         class="full-width"
-        :disable="loading || !selectedDocuments || selectedDocuments.length === 0"
+        :disable="props.loading || !props.selectedDocuments || props.selectedDocuments.length === 0"
         @keyup.enter="sendMessage"
       >
         <template v-slot:after>
@@ -72,8 +69,13 @@
             flat
             icon="send"
             color="primary"
-            :disable="!newMessage.trim() || loading || !selectedDocuments || selectedDocuments.length === 0"
-            :loading="loading"
+            :disable="
+              !newMessage.trim() ||
+              props.loading ||
+              !props.selectedDocuments ||
+              props.selectedDocuments.length === 0
+            "
+            :loading="props.loading"
             @click="sendMessage"
           />
         </template>
@@ -86,29 +88,27 @@
 <script setup>
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
-import { api } from 'src/boot/axios'
 
 const props = defineProps({
+  messages: {
+    type: Array,
+    default: () => [],
+  },
   selectedDocuments: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['toggle-drawer', 'action', 'send-message'])
 const $q = useQuasar()
 
 const newMessage = ref('')
-const messages = ref([
-  {
-    id: 1,
-    sender: 'assistant',
-    text: '¡Hola! 👋 Soy tu asistente de onboarding. Selecciona un documento y hazme preguntas sobre él.',
-    timestamp: '09:00'
-  }
-])
-
-const loading = ref(false)
+// const loading = ref(false)
 
 const docLabels = {
   politicas: 'Políticas',
@@ -116,74 +116,30 @@ const docLabels = {
   onboarding: 'Onboarding',
   codigo_conducta: 'Código de Conducta',
   sistemas: 'Sistemas',
-  organo: 'Organigrama'
+  organo: 'Organigrama',
 }
 
 const getDocLabel = (docId) => docLabels[docId] || docId
 
-const sendMessage = async () => {
+// La lógica se ha movido al padre. Este componente solo emite el evento.
+const sendMessage = () => {
   if (!newMessage.value.trim()) return
 
-  // Validar que haya documento seleccionado
   if (!props.selectedDocuments || props.selectedDocuments.length === 0) {
     $q.notify({
       type: 'warning',
-      message: 'Por favor selecciona un documento primero'
+      message: 'Por favor selecciona un documento primero',
     })
     return
   }
 
-  const messageText = newMessage.value
-  const documentId = props.selectedDocuments[0]
-
-  // Agregar mensaje del usuario AL CHAT INMEDIATAMENTE
-  messages.value.push({
-    id: messages.value.length + 1,
-    sender: 'user',
-    text: messageText,
-    timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-  })
-
-  // Emitir evento para que el padre maneje la lógica
+  // Emitir el evento para que el padre lo maneje
   emit('send-message', {
-    message: messageText,
-    documents: props.selectedDocuments
+    message: newMessage.value.trim(),
   })
 
+  // Limpiar el input
   newMessage.value = ''
-  loading.value = true
-
-  try {
-    // Llamar al backend: POST /api/documentos/{id}/preguntar
-    const response = await api.post(`/documentos/${documentId}/preguntar`, {
-      pregunta: messageText
-    })
-
-    // Agregar respuesta del asistente
-    messages.value.push({
-      id: messages.value.length + 1,
-      sender: 'assistant',
-      text: response.data.respuesta || response.data || 'No pude obtener una respuesta',
-      timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-    })
-  } catch (err) {
-    console.error('Error al enviar pregunta:', err)
-    
-    // Mostrar error en el chat
-    messages.value.push({
-      id: messages.value.length + 1,
-      sender: 'assistant',
-      text: '❌ Error al procesar tu pregunta. Por favor intenta de nuevo.',
-      timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-    })
-
-    $q.notify({
-      type: 'negative',
-      message: 'Error al enviar la pregunta'
-    })
-  } finally {
-    loading.value = false
-  }
 }
 </script>
 

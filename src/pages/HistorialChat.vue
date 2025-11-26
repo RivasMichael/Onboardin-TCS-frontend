@@ -50,11 +50,25 @@
 
       <!-- Chat Box -->
       <ChatBox
+        :messages="messages"
         :selected-documents="selectedDocument ? [selectedDocument] : []"
+        :loading="loading"
         class="col"
         @toggle-drawer="$emit('toggle-drawer')"
         @send-message="handleSendMessage"
       />
+      <!-- Ventana flotante para mostrar la última respuesta -->
+      <q-dialog v-model="showResponseDialog">
+        <q-card>
+          <q-card-section>
+            <div class="text-h6">Respuesta del asistente</div>
+            <div>{{ lastAssistantResponse }}</div>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cerrar" color="primary" v-close-popup />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
     </div>
   </q-page>
 </template>
@@ -72,6 +86,30 @@ const $q = useQuasar()
 const selectedDocument = ref(null)
 const availableDocuments = ref([])
 const loading = ref(false)
+const showResponseDialog = ref(false)
+const lastAssistantResponse = ref('')
+
+// Estado del chat, ahora gestionado por el padre
+const messages = ref([
+  {
+    id: 1,
+    sender: 'assistant',
+    text: '¡Hola! 👋 Soy tu asistente de onboarding. Selecciona un documento y hazme preguntas sobre él.',
+    timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+  },
+  {
+    id: 2,
+    sender: 'user',
+    text: '¿Qué me dice este pdf?',
+    timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+  },
+  {
+    id: 3,
+    sender: 'assistant',
+    text: 'Este documento titulado "Conoce a Tu Equipo" es parte del material de onboarding.',
+    timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+  },
+])
 
 // Cargar documentos del backend
 const loadDocuments = async () => {
@@ -79,14 +117,14 @@ const loadDocuments = async () => {
   try {
     const response = await api.get('/documentos')
     console.log('Documentos cargados:', response.data)
-    
+
     if (response.data && Array.isArray(response.data)) {
-      availableDocuments.value = response.data.map(doc => ({
+      availableDocuments.value = response.data.map((doc) => ({
         id: doc.id,
         value: doc.id,
         label: doc.titulo,
         icon: 'o_description',
-        description: doc.descripcion
+        description: doc.descripcion,
       }))
       console.log('Documentos procesados:', availableDocuments.value)
     } else {
@@ -96,7 +134,7 @@ const loadDocuments = async () => {
     console.error('Error al cargar documentos:', err.message)
     $q.notify({
       type: 'negative',
-      message: 'Error al cargar los documentos: ' + err.message
+      message: 'Error al cargar los documentos: ' + err.message,
     })
   } finally {
     loading.value = false
@@ -109,15 +147,59 @@ onMounted(() => {
 })
 
 const getDocumentLabel = (docId) => {
-  const doc = availableDocuments.value.find(d => d.id === docId)
+  const doc = availableDocuments.value.find((d) => d.id === docId)
   return doc ? doc.label : docId
 }
 
-const handleSendMessage = ({ message, documents }) => {
-  console.log('Mensaje:', message)
-  console.log('Documento seleccionado (ID):', documents)
-  // Aquí iría la lógica para enviar al backend con el ID del documento
-  // POST /api/chat/send { message, documentId: documents[0] }
+// Lógica de envío de mensajes, ahora centralizada aquí
+const handleSendMessage = async ({ message }) => {
+  if (!message || !selectedDocument.value) return
+
+  const documentId = selectedDocument.value
+
+  // 1. Agregar mensaje del usuario a la lista
+  messages.value.push({
+    id: messages.value.length + 1,
+    sender: 'user',
+    text: message,
+    timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+  })
+
+  // 2. Llamar a la API
+  try {
+    const response = await api.post(`/documentos/${documentId}/preguntar`, {
+      pregunta: message,
+    })
+    console.log('Respuesta de la API:', response.data)
+
+    // 3. Agregar respuesta del asistente
+    const respuesta =
+      response.data.respuesta || response.data.response || 'No se recibió una respuesta clara.'
+    messages.value.push({
+      id: messages.value.length + 1,
+      sender: 'assistant',
+      text: respuesta,
+      timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+    })
+
+    lastAssistantResponse.value = respuesta
+    showResponseDialog.value = true
+  } catch (error) {
+    console.error('Error al contactar la API:', error)
+    // 4. Agregar mensaje de error
+    messages.value.push({
+      id: messages.value.length + 1,
+      sender: 'assistant',
+      text: 'Lo siento, ocurrió un error al procesar tu pregunta.',
+      timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+    })
+    lastAssistantResponse.value = 'Lo siento, ocurrió un error al procesar tu pregunta.'
+    showResponseDialog.value = true
+    $q.notify({
+      type: 'negative',
+      message: 'Error al enviar la pregunta.',
+    })
+  }
 }
 </script>
 
