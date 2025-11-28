@@ -2,8 +2,7 @@ import { defineBoot } from '#q-app/wrappers'
 import axios from 'axios'
 
 // Use '/api' so dev server proxy forwards requests to backend during development
-
-const api = axios.create({ baseURL: 'http://localhost:5083/api' })
+const api = axios.create({ baseURL: '/api' })
 
 // Attach token from localStorage to every request (simple approach)
 api.interceptors.request.use((config) => {
