@@ -79,14 +79,14 @@ const loadDocuments = async () => {
   try {
     const response = await api.get('/documentos')
     console.log('Documentos cargados:', response.data)
-    
+
     if (response.data && Array.isArray(response.data)) {
-      availableDocuments.value = response.data.map(doc => ({
+      availableDocuments.value = response.data.map((doc) => ({
         id: doc.id,
         value: doc.id,
         label: doc.titulo,
         icon: 'o_description',
-        description: doc.descripcion
+        description: doc.descripcion,
       }))
       console.log('Documentos procesados:', availableDocuments.value)
     } else {
@@ -96,7 +96,7 @@ const loadDocuments = async () => {
     console.error('Error al cargar documentos:', err.message)
     $q.notify({
       type: 'negative',
-      message: 'Error al cargar los documentos: ' + err.message
+      message: 'Error al cargar los documentos: ' + err.message,
     })
   } finally {
     loading.value = false
@@ -109,7 +109,7 @@ onMounted(() => {
 })
 
 const getDocumentLabel = (docId) => {
-  const doc = availableDocuments.value.find(d => d.id === docId)
+  const doc = availableDocuments.value.find((d) => d.id === docId)
   return doc ? doc.label : docId
 }
 
