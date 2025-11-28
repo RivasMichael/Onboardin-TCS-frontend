@@ -1,46 +1,49 @@
 <template>
   <div class="chat-box column no-wrap">
-    <!-- Mensajes -->
-    <q-scroll-area class="col q-pa-md">
-      <div class="q-gutter-md">
-        <div v-for="msg in messages" :key="msg.id" class="message-container" :class="msg.sender">
-          <q-chat-message
-            :sent="msg.sender === 'user'"
-            :bg-color="msg.sender === 'user' ? 'primary' : 'grey-2'"
-            text-color="white"
-          >
-            <template v-if="msg.sender === 'assistant'" v-slot:avatar>
-              <q-avatar class="q-mr-sm">
-                <img src="https://cdn-icons-png.flaticon.com/512/2593/2593641.png">
-              </q-avatar>
-            </template>
-            {{ msg.text }}
-            <q-chat-message-stamp>{{ msg.timestamp }}</q-chat-message-stamp>
-          </q-chat-message>
+    <!-- 💬 ZONA DE MENSAJES -->
+    <div class="col q-pa-md messages-scroll">
+      <!-- 🔴 DEBUG FIJO PARA VER SI ESTO SE RENDERIZA -->
+      <div class="debug-static">DEBUG: zona de mensajes cargada</div>
 
-          <!-- Acciones si es del asistente -->
-          <div v-if="msg.sender === 'assistant' && msg.actions" class="row q-gutter-x-sm q-mt-md">
-            <q-btn
-              v-for="action in msg.actions"
-              :key="action.label"
-              outline
-              dense
-              no-caps
-              color="primary"
-              :label="action.label"
-              @click="$emit('action', action.value)"
-            />
+      <!-- Lista de mensajes -->
+      <div class="messages-area">
+        <div v-for="msg in messages" :key="msg.id" class="bubble" :class="msg.sender">
+          <div class="bubble-inner">
+            <!-- Avatar del asistente -->
+            <div v-if="msg.sender === 'assistant'" class="bubble-avatar">
+              <q-avatar size="28px" class="q-mr-sm">
+                <img src="https://cdn-icons-png.flaticon.com/512/2593/2593641.png" />
+              </q-avatar>
+            </div>
+
+            <!-- Cuerpo del mensaje -->
+            <div class="bubble-body">
+              <div class="bubble-text">
+                {{ msg.text }}
+              </div>
+              <div class="bubble-time">
+                {{ msg.timestamp }}
+              </div>
+            </div>
           </div>
         </div>
+
+        <!-- Si no hay mensajes -->
+        <div v-if="messages.length === 0" class="empty-state">
+          Empieza el chat enviando tu primera pregunta 🙂
+        </div>
       </div>
-    </q-scroll-area>
+    </div>
 
     <q-separator />
 
-    <!-- Input área -->
+    <!-- 📝 INPUT DEL CHAT -->
     <div class="q-pa-md bg-white">
       <!-- Documentos seleccionados info -->
-      <div v-if="selectedDocuments && selectedDocuments.length > 0" class="q-mb-md q-pa-sm bg-blue-1 rounded-borders">
+      <div
+        v-if="selectedDocuments && selectedDocuments.length > 0"
+        class="q-mb-md q-pa-sm bg-blue-1 rounded-borders"
+      >
         <div class="text-caption text-weight-bold q-mb-xs">Documentos activos:</div>
         <div class="row q-gutter-xs">
           <q-chip
@@ -55,7 +58,7 @@
         </div>
       </div>
 
-      <!-- Input -->
+      <!-- Campo de texto -->
       <q-input
         v-model="newMessage"
         placeholder="Escribe tu pregunta aquí..."
@@ -72,12 +75,18 @@
             flat
             icon="send"
             color="primary"
-            :disable="!newMessage.trim() || loading || !selectedDocuments || selectedDocuments.length === 0"
+            :disable="
+              !newMessage.trim() ||
+              loading ||
+              !selectedDocuments ||
+              selectedDocuments.length === 0
+            "
             :loading="loading"
             @click="sendMessage"
           />
         </template>
       </q-input>
+
       <div class="text-caption text-grey-6 q-mt-xs text-center">Presiona Enter para enviar</div>
     </div>
   </div>
@@ -86,29 +95,27 @@
 <script setup>
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
-import { api } from 'src/boot/axios'
 
 const props = defineProps({
+  messages: {
+    type: Array,
+    default: () => [],
+  },
   selectedDocuments: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-const emit = defineEmits(['toggle-drawer', 'action', 'send-message'])
+const emit = defineEmits(['toggle-drawer', 'action', 'send-message', 'new-message'])
+
 const $q = useQuasar()
 
 const newMessage = ref('')
-const messages = ref([
-  {
-    id: 1,
-    sender: 'assistant',
-    text: '¡Hola! 👋 Soy tu asistente de onboarding. Selecciona un documento y hazme preguntas sobre él.',
-    timestamp: '09:00'
-  }
-])
-
-const loading = ref(false)
 
 const docLabels = {
   politicas: 'Políticas',
@@ -116,74 +123,35 @@ const docLabels = {
   onboarding: 'Onboarding',
   codigo_conducta: 'Código de Conducta',
   sistemas: 'Sistemas',
-  organo: 'Organigrama'
+  organo: 'Organigrama',
 }
 
 const getDocLabel = (docId) => docLabels[docId] || docId
 
-const sendMessage = async () => {
+const sendMessage = () => {
   if (!newMessage.value.trim()) return
 
-  // Validar que haya documento seleccionado
   if (!props.selectedDocuments || props.selectedDocuments.length === 0) {
     $q.notify({
       type: 'warning',
-      message: 'Por favor selecciona un documento primero'
+      message: 'Por favor selecciona un documento primero',
     })
     return
   }
 
-  const messageText = newMessage.value
-  const documentId = props.selectedDocuments[0]
-
-  // Agregar mensaje del usuario AL CHAT INMEDIATAMENTE
-  messages.value.push({
-    id: messages.value.length + 1,
-    sender: 'user',
-    text: messageText,
-    timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+  // Emitimos al padre; él se encarga de llamar al backend y actualizar messages
+  emit('send-message', {
+    message: newMessage.value.trim(),
+    documents: props.selectedDocuments,
   })
 
-  // Emitir evento para que el padre maneje la lógica
-  emit('send-message', {
-    message: messageText,
-    documents: props.selectedDocuments
+  emit('new-message', {
+    role: 'user',
+    text: newMessage.value.trim(),
+    documents: props.selectedDocuments,
   })
 
   newMessage.value = ''
-  loading.value = true
-
-  try {
-    // Llamar al backend: POST /api/documentos/{id}/preguntar
-    const response = await api.post(`/documentos/${documentId}/preguntar`, {
-      pregunta: messageText
-    })
-
-    // Agregar respuesta del asistente
-    messages.value.push({
-      id: messages.value.length + 1,
-      sender: 'assistant',
-      text: response.data.respuesta || response.data || 'No pude obtener una respuesta',
-      timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-    })
-  } catch (err) {
-    console.error('Error al enviar pregunta:', err)
-    
-    // Mostrar error en el chat
-    messages.value.push({
-      id: messages.value.length + 1,
-      sender: 'assistant',
-      text: '❌ Error al procesar tu pregunta. Por favor intenta de nuevo.',
-      timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-    })
-
-    $q.notify({
-      type: 'negative',
-      message: 'Error al enviar la pregunta'
-    })
-  } finally {
-    loading.value = false
-  }
 }
 </script>
 
@@ -191,17 +159,82 @@ const sendMessage = async () => {
 .chat-box {
   height: 100%;
   background: $grey-1;
+}
 
-  .message-container {
-    &.user {
-      display: flex;
-      justify-content: flex-end;
-    }
+/* 🔴 Texto debug */
+.debug-static {
+  font-size: 12px;
+  color: red;
+  margin-bottom: 8px;
+}
 
-    &.assistant {
-      display: flex;
-      justify-content: flex-start;
-    }
-  }
+.messages-scroll {
+  overflow-y: auto;
+}
+
+.messages-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bubble {
+  display: flex;
+  width: 100%;
+}
+
+.bubble.user {
+  justify-content: flex-end;
+}
+
+.bubble.assistant {
+  justify-content: flex-start;
+}
+
+.bubble-inner {
+  display: flex;
+  max-width: 70%;
+}
+
+.bubble-avatar {
+  display: flex;
+  align-items: flex-end;
+}
+
+.bubble-body {
+  background: #f1f1f1;
+  border-radius: 18px;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.bubble.user .bubble-body {
+  background: #1976d2;
+  color: white;
+}
+
+.bubble.assistant .bubble-body {
+  background: white;
+  color: black;
+}
+
+.bubble-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bubble-time {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.empty-state {
+  font-size: 13px;
+  color: #777;
+  text-align: center;
+  margin-top: 16px;
 }
 </style>

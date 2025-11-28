@@ -103,57 +103,123 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
+import { api } from 'src/boot/axios'
 
-defineOptions({ name: 'ActividadesPage' });
+defineOptions({ name: 'ActividadesPage' })
 
-const filter = ref('Todos');
+const $q = useQuasar()
+const filter = ref('Todos')
+const activities = ref([])
+const loading = ref(false)
 
-const activities = ref([
-  { id: 1, title: 'Sesión de Bienvenida', description: 'Reunión de bienvenida con el equipo de RRHH y tu supervisor.', date: 'Sábado, 8 de Noviembre de 2025', time: '10:00', location: 'Sala de Conferencias A', organizer: 'Recursos Humanos', completed: true },
-  { id: 2, title: 'Configuración de Herramientas', description: 'Configuración de correo, VPN y accesos a sistemas.', date: 'Sábado, 8 de Noviembre de 2025', time: '14:00', location: 'Oficina', organizer: 'IT Support', completed: true },
-  { id: 3, title: 'Curso de Seguridad', description: 'Curso online obligatorio sobre políticas de seguridad.', date: 'Lunes, 10 de Noviembre de 2025', time: 'Todo el día', location: 'Online', organizer: 'Seguridad Corp.', completed: false },
-  { id: 4, title: 'Firma de Contrato', description: 'Revisión y firma de documentos contractuales.', date: 'Martes, 11 de Noviembre de 2025', time: '09:00', location: 'Oficina RRHH', organizer: 'Recursos Humanos', completed: false },
-  { id: 5, title: 'Reunión 1:1 con Manager', description: 'Primera reunión con tu manager para definir objetivos.', date: 'Martes, 11 de Noviembre de 2025', time: '11:30', location: 'Sala de reuniones B', organizer: 'Tu Manager', completed: false },
-  { id: 6, title: 'Almuerzo de Equipo', description: 'Almuerzo de bienvenida para conocer a tus compañeros.', date: 'Miércoles, 12 de Noviembre de 2025', time: '13:00', location: 'Cafetería', organizer: 'Equipo', completed: false },
-  { id: 7, title: 'Completar Perfil Interno', description: 'Añade tu foto y descripción en el portal del empleado.', date: 'Viernes, 14 de Noviembre de 2025', time: 'Todo el día', location: 'Portal del Empleado', organizer: 'Tú', completed: false }
-]);
+// Cargar actividades del usuario desde la API
+const loadActivities = async () => {
+  loading.value = true
+  try {
+    const response = await api.get('/actividades/mis-actividades')
+    
+    // La API devuelve {actividades: [], resumen: {}, usuario: ""}
+    const actividadesData = response.data.actividades || []
+    
+    // Mapear los datos de la API al formato esperado por el componente
+    activities.value = actividadesData.map(act => ({
+      id: act.id,
+      title: act.titulo,
+      description: act.descripcion,
+      date: formatDate(act.fecha),
+      time: act.hora || 'Sin hora definida',
+      location: act.lugar || 'Sin ubicación',
+      organizer: act.creado_por || 'Sin organizador',
+      completed: act.estado === 'completada',
+      esUrgente: act.es_urgente || false
+    }))
+  } catch (err) {
+    console.error('Error al cargar actividades:', err)
+    $q.notify({
+      type: 'negative',
+      message: 'Error al cargar las actividades'
+    })
+  } finally {
+    loading.value = false
+  }
+}
 
-const completedCount = computed(() => activities.value.filter(a => a.completed).length);
-const pendingCount = computed(() => activities.value.filter(a => !a.completed).length);
-const upcomingCount = ref(0); // Simulado
+onMounted(() => {
+  loadActivities()
+})
+
+const completedCount = computed(() => activities.value.filter(a => a.completed).length)
+const pendingCount = computed(() => activities.value.filter(a => !a.completed).length)
+const upcomingCount = ref(0)
 
 const summaries = computed(() => [
   { label: 'Total', value: activities.value.length, color: 'blue' },
   { label: 'Pendientes', value: pendingCount.value, color: 'yellow' },
   { label: 'Próximas', value: upcomingCount.value, color: 'orange' },
   { label: 'Completadas', value: completedCount.value, color: 'green' },
-]);
+])
 
 const filterOptions = computed(() => [
   { label: 'Todos', value: 'Todos' },
   { label: `Pendientes`, value: 'Pendientes', sublabel: pendingCount.value },
   { label: 'Próximas', value: 'Próximas', sublabel: 0 },
   { label: `Completadas`, value: 'Completadas', sublabel: completedCount.value },
-]);
+])
 
 const filteredActivities = computed(() => {
   switch (filter.value) {
     case 'Pendientes':
-      return activities.value.filter(a => !a.completed);
+      return activities.value.filter(a => !a.completed)
     case 'Completadas':
-      return activities.value.filter(a => a.completed);
+      return activities.value.filter(a => a.completed)
     case 'Próximas':
-      return []; // Siempre vacío por ahora
+      return []
     default:
-      return activities.value;
+      return activities.value
   }
-});
+})
 
-function toggleActivityStatus(activityId) {
-  const activity = activities.value.find(a => a.id === activityId);
-  if (activity) {
-    activity.completed = !activity.completed;
+function formatDate(dateString) {
+  if (!dateString) return 'Sin fecha'
+  const date = new Date(dateString)
+  return date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+async function toggleActivityStatus(activityId) {
+  const activity = activities.value.find(a => a.id === activityId)
+  if (!activity) return
+
+  loading.value = true
+  try {
+    if (!activity.completed) {
+      // Marcar como completada
+      await api.patch(`/actividades/${activityId}/completar`)
+      activity.completed = true
+      $q.notify({
+        message: 'Actividad marcada como completada',
+        color: 'positive',
+        icon: 'o_check'
+      })
+    } else {
+      // Marcar como pendiente (puedes ajustar el endpoint si tu backend lo soporta)
+      await api.put(`/actividades/${activityId}`, { estado: 'pendiente' })
+      activity.completed = false
+      $q.notify({
+        message: 'Actividad marcada como pendiente',
+        color: 'positive',
+        icon: 'o_check'
+      })
+    }
+  } catch (err) {
+    console.error('Error al actualizar estado:', err)
+    $q.notify({
+      type: 'negative',
+      message: 'Error al actualizar la actividad'
+    })
+  } finally {
+    loading.value = false
   }
 }
 

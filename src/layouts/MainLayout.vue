@@ -5,7 +5,7 @@
       <q-toolbar>
         <q-btn flat dense round icon="o_apps" aria-label="Menu" @click="toggleLeftDrawer" />
         <q-avatar class="q-ml-sm">
-          <img src="https://cdn-icons-png.flaticon.com/512/2593/2593641.png">
+          <img src="/images/icono.png">
         </q-avatar>
         <q-toolbar-title>
           Asistente de Onboarding
@@ -14,22 +14,19 @@
         <q-space />
 
         <div class="q-gutter-sm row items-center no-wrap">
-          <span class="text-weight-bold">María González</span>
-          <q-avatar size="lg" color="primary" text-color="white">MG</q-avatar>
+          <span class="text-weight-bold">{{ nombreUsuario }}</span>
+          <q-btn round flat icon="o_account_circle" aria-label="Ver perfil" @click="abrirPerfilCard" style="cursor:pointer" />
           <q-btn round flat icon="o_logout" aria-label="Salir" @click="logout" />
         </div>
+        <UserProfileCard v-if="showPerfilCard" @close="showPerfilCard = false" />
       </q-toolbar>
 
       <q-tabs align="left" class="q-mt-sm" v-model="currentTab">
-        <q-route-tab to="/dashboard/chat/general" name="chat" icon="o_chat" label="Chat">
-          <q-badge color="red" floating>3</q-badge>
-        </q-route-tab>
-        <q-route-tab to="/dashboard/actividades" name="actividades" icon="o_pending_actions" label="Actividades">
-          <q-badge color="red" floating>5</q-badge>
-        </q-route-tab>
-        <q-route-tab to="/dashboard/cursos" name="cursos" icon="o_school" label="Cursos" />
-        <q-route-tab to="/dashboard/documentos" name="documentos" icon="o_description" label="Documentos" />
-        <q-route-tab to="/dashboard/supervisor" name="supervisor" icon="o_supervisor_account" label="Supervisor" />
+        <q-route-tab to="/dashboard/chat/general" name="chat" icon="o_chat_bubble_outline" label="Chat" />
+        <q-route-tab to="/dashboard/actividades" name="actividades" icon="o_calendar_today" label="Actividades" />
+        <q-route-tab to="/dashboard/cursos" name="cursos" icon="o_menu_book" label="Cursos" />
+        <q-route-tab to="/dashboard/documentos" name="documentos" icon="o_article" label="Documentos" />
+        <q-route-tab to="/dashboard/supervisor" name="supervisor" icon="o_person" label="Supervisor" />
       </q-tabs>
     </q-header>
 
@@ -46,7 +43,7 @@
 
       <q-list class="q-pa-md">
         <q-item>
-          <q-btn outline rounded class="full-width" icon="o_add" label="+ Nueva conversación" no-caps />
+          <q-btn outline rounded class="full-width" icon="o_add" label="Nueva conversación" no-caps />
         </q-item>
 
         <q-separator class="q-my-md" />
@@ -71,14 +68,24 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from 'src/stores/auth';
+import UserProfileCard from 'src/components/UserProfileCard.vue';
 
 defineOptions({ name: 'MainLayout' });
 
 const router = useRouter();
+const auth = useAuthStore();
 const leftDrawerOpen = ref(false);
 const currentTab = ref('chat');
+const showPerfilCard = ref(false);
+
+onMounted(() => {
+  auth.loadFromStorage();
+});
+
+const nombreUsuario = computed(() => auth.usuario?.nombre || 'Usuario');
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
@@ -87,6 +94,10 @@ function toggleLeftDrawer() {
 function logout() {
   // Navegar de vuelta a la página de login
   router.push('/');
+}
+
+function abrirPerfilCard() {
+  showPerfilCard.value = true;
 }
 
 </script>

@@ -22,17 +22,41 @@
 
     <div class="user-info row items-center q-ml-sm">
       <div class="q-mr-md text-right">
-        <div class="text-subtitle2">María González</div>
-        <div class="text-caption">Nuevo Especialista</div>
+        <div class="text-subtitle2">{{ nombreUsuario }}</div>
+        <div class="text-caption">{{ cargoUsuario }}</div>
       </div>
-      <q-avatar size="40" class="bg-blue text-white">MG</q-avatar>
+      <q-avatar size="40" class="bg-blue text-white">{{ iniciales }}</q-avatar>
+      <q-btn flat dense round icon="account_circle" class="q-ml-sm" @click="abrirPerfil" style="cursor:pointer" />
       <q-btn flat dense round icon="logout" class="q-ml-sm" />
     </div>
+    <UserProfile v-model="showPerfil" />
+    <UserProfileCard v-if="showPerfil" @close="showPerfil = false" />
   </div>
 </template>
 
 <script setup>
-// No JS required for simple topbar
+import { ref, computed, onMounted } from 'vue'
+import UserProfile from 'src/components/UserProfile.vue'
+import UserProfileCard from 'src/components/UserProfileCard.vue'
+import { useAuthStore } from 'src/stores/auth'
+
+const auth = useAuthStore()
+const showPerfil = ref(false)
+
+onMounted(() => {
+  auth.loadFromStorage()
+})
+
+const nombreUsuario = computed(() => auth.usuario?.nombre || 'Usuario')
+const cargoUsuario = computed(() => auth.usuario?.cargo || '')
+const iniciales = computed(() => {
+  if (!auth.usuario?.nombre) return 'U'
+  return auth.usuario.nombre.split(' ').map(n => n[0]).join('').toUpperCase()
+})
+
+function abrirPerfil() {
+  showPerfil.value = true
+}
 </script>
 
 <style scoped>
