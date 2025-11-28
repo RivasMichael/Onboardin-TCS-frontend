@@ -56,9 +56,9 @@
                 <div class="text-weight-bold">{{ doc.name }}</div>
                 <div class="q-gutter-sm q-mt-xs">
                   <q-chip dense outline color="primary">{{ doc.category }}</q-chip>
-                  <q-chip dense outline :color="doc.type === 'Enlace' ? 'orange' : 'grey-7'">{{
-                    doc.type
-                  }}</q-chip>
+                  <q-chip dense outline :color="doc.type === 'Enlace' ? 'orange' : 'grey-7'">
+                    {{ doc.type }}
+                  </q-chip>
                 </div>
               </div>
               <q-btn-group flat>
@@ -72,8 +72,9 @@
               :href="doc.url"
               target="_blank"
               class="text-primary text-caption ellipsis"
-              >{{ doc.url }}</a
             >
+              {{ doc.url }}
+            </a>
           </q-card-section>
         </q-card>
       </div>
@@ -111,7 +112,6 @@ async function loadDocuments() {
       category: doc.categoria,
       size: doc.tamanoArchivo,
       createdAt: doc.creadoEn,
-      // type y url pueden ser null o calculados si lo necesitas
       type: 'PDF',
       url: null,
     }))
@@ -147,49 +147,6 @@ const filteredDocuments = computed(() => {
 // --- Lógica de Creación/Edición ---
 const showDialog = ref(false)
 
-// PDF file handling
-const pdfFile = ref(null)
-const pdfError = ref('')
-const pdfInput = ref(null)
-const MAX_PDF_SIZE = 10 * 1024 * 1024 // 10MB
-
-function onPdfSelected(e) {
-  pdfError.value = ''
-  const file = e.target.files && e.target.files[0]
-  if (!file) return
-  if (file.type !== 'application/pdf') {
-    pdfError.value = 'El archivo debe ser un PDF.'
-    pdfFile.value = null
-    e.target.value = null
-    return
-  }
-  if (file.size > MAX_PDF_SIZE) {
-    pdfError.value = 'El archivo supera el tamaño máximo de 10MB.'
-    pdfFile.value = null
-    e.target.value = null
-    return
-  }
-  pdfFile.value = file
-}
-
-function removePdf() {
-  pdfFile.value = null
-  pdfError.value = ''
-  if (pdfInput.value) pdfInput.value.value = null
-}
-
-function triggerPdfInput() {
-  if (pdfInput.value) pdfInput.value.click()
-}
-
-function readableSize(bytes) {
-  if (!bytes) return ''
-  const mb = bytes / (1024 * 1024)
-  if (mb >= 1) return mb.toFixed(2) + ' MB'
-  const kb = bytes / 1024
-  return kb.toFixed(2) + ' KB'
-}
-
 function openCreateDialog() {
   showDialog.value = true
 }
@@ -207,7 +164,7 @@ async function onDocumentUploaded() {
 // --- Lógica de Eliminación ---
 function confirmDelete(doc) {
   $q.dialog({
-    title: 'Figma',
+    title: 'Eliminar documento',
     message: `¿Estás seguro de eliminar "${doc.name}"?`,
     cancel: {
       label: 'Cancelar',
@@ -219,14 +176,20 @@ function confirmDelete(doc) {
       flat: true,
     },
     persistent: true,
-  }).onOk(() => {
-    const index = documents.value.findIndex((d) => d.id === doc.id)
-    if (index !== -1) {
-      documents.value.splice(index, 1)
+  }).onOk(async () => {
+    try {
+      await api.delete(`/documentos/${doc.id}`)
+      await loadDocuments()
       $q.notify({
         color: 'positive',
         message: 'Documento eliminado correctamente',
         icon: 'o_check',
+      })
+    } catch {
+      $q.notify({
+        color: 'negative',
+        message: 'Error al eliminar el documento',
+        icon: 'o_block',
       })
     }
   })

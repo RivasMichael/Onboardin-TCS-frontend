@@ -51,7 +51,6 @@
             <q-card-section>
               <div class="row justify-between items-center">
                 <q-chip dense :label="course.nivel" :color="course.nivel === 'Principiante' ? 'green-2' : (course.nivel === 'Avanzado' ? 'red-2' : 'orange-2')" :text-color="course.nivel === 'Principiante' ? 'green-7' : (course.nivel === 'Avanzado' ? 'red-7' : 'orange-7')" />
-                <q-btn flat round dense icon="o_favorite_border" />
               </div>
               <div class="text-h6 q-mt-sm q-mb-xs">{{ course.titulo }}</div>
               <p class="text-body2 text-grey-8">{{ course.descripcion }}</p>

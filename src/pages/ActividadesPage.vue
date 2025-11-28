@@ -193,19 +193,25 @@ async function toggleActivityStatus(activityId) {
 
   loading.value = true
   try {
-    const nuevoEstado = activity.completed ? 'pendiente' : 'completada'
-    
-    await api.put(`/actividades/${activityId}`, {
-      estado: nuevoEstado
-    })
-    
-    activity.completed = !activity.completed
-    
-    $q.notify({
-      message: activity.completed ? 'Actividad marcada como completada' : 'Actividad marcada como pendiente',
-      color: 'positive',
-      icon: 'o_check'
-    })
+    if (!activity.completed) {
+      // Marcar como completada
+      await api.patch(`/actividades/${activityId}/completar`)
+      activity.completed = true
+      $q.notify({
+        message: 'Actividad marcada como completada',
+        color: 'positive',
+        icon: 'o_check'
+      })
+    } else {
+      // Marcar como pendiente (puedes ajustar el endpoint si tu backend lo soporta)
+      await api.put(`/actividades/${activityId}`, { estado: 'pendiente' })
+      activity.completed = false
+      $q.notify({
+        message: 'Actividad marcada como pendiente',
+        color: 'positive',
+        icon: 'o_check'
+      })
+    }
   } catch (err) {
     console.error('Error al actualizar estado:', err)
     $q.notify({

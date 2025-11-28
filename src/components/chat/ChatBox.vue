@@ -39,7 +39,7 @@
 
     <!-- 📝 INPUT DEL CHAT -->
     <div class="q-pa-md bg-white">
-      <!-- Documentos seleccionados -->
+      <!-- Documentos seleccionados info -->
       <div
         v-if="selectedDocuments && selectedDocuments.length > 0"
         class="q-mb-md q-pa-sm bg-blue-1 rounded-borders"
@@ -76,7 +76,10 @@
             icon="send"
             color="primary"
             :disable="
-              !newMessage.trim() || loading || !selectedDocuments || selectedDocuments.length === 0
+              !newMessage.trim() ||
+              loading ||
+              !selectedDocuments ||
+              selectedDocuments.length === 0
             "
             :loading="loading"
             @click="sendMessage"
@@ -92,12 +95,19 @@
 <script setup>
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
-import { api } from 'src/boot/axios'
 
 const props = defineProps({
+  messages: {
+    type: Array,
+    default: () => [],
+  },
   selectedDocuments: {
     type: Array,
     default: () => [],
+  },
+  loading: {
+    type: Boolean,
+    default: false,
   },
 })
 
@@ -106,16 +116,6 @@ const emit = defineEmits(['toggle-drawer', 'action', 'send-message', 'new-messag
 const $q = useQuasar()
 
 const newMessage = ref('')
-const messages = ref([
-  {
-    id: 1,
-    sender: 'assistant',
-    text: '¡Hola! 👋 Soy tu asistente de onboarding. Selecciona un documento y hazme preguntas sobre él.',
-    timestamp: '09:00',
-  },
-])
-
-const loading = ref(false)
 
 const docLabels = {
   politicas: 'Políticas',
@@ -128,68 +128,30 @@ const docLabels = {
 
 const getDocLabel = (docId) => docLabels[docId] || docId
 
-const sendMessage = async () => {
+const sendMessage = () => {
   if (!newMessage.value.trim()) return
 
   if (!props.selectedDocuments || props.selectedDocuments.length === 0) {
-    $q.notify({ type: 'warning', message: 'Por favor selecciona un documento primero' })
+    $q.notify({
+      type: 'warning',
+      message: 'Por favor selecciona un documento primero',
+    })
     return
   }
 
-  const messageText = newMessage.value
-  const documentId = props.selectedDocuments[0]
-
-  // Agregar mensaje del usuario
-  messages.value.push({
-    id: messages.value.length + 1,
-    sender: 'user',
-    text: messageText,
-    timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+  // Emitimos al padre; él se encarga de llamar al backend y actualizar messages
+  emit('send-message', {
+    message: newMessage.value.trim(),
+    documents: props.selectedDocuments,
   })
 
-  emit('new-message', { role: 'user', text: messageText, documents: props.selectedDocuments })
-  emit('send-message', { message: messageText, documents: props.selectedDocuments })
+  emit('new-message', {
+    role: 'user',
+    text: newMessage.value.trim(),
+    documents: props.selectedDocuments,
+  })
 
   newMessage.value = ''
-  loading.value = true
-
-  try {
-    const response = await api.post(`/documentos/${documentId}/preguntar`, {
-      pregunta: messageText,
-    })
-
-    const answerText =
-      response?.data?.respuesta ||
-      response?.data?.response ||
-      response?.data?.answer ||
-      (typeof response?.data === 'string' ? response.data : null) ||
-      (response?.data && response.data.text) ||
-      'No pude obtener una respuesta'
-
-    const assistantText = typeof answerText === 'string' ? answerText : JSON.stringify(answerText)
-
-    messages.value.push({
-      id: messages.value.length + 1,
-      sender: 'assistant',
-      text: assistantText,
-      timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-    })
-
-    emit('new-message', { role: 'assistant', text: assistantText, document: documentId })
-  } catch (err) {
-    console.error('Error al enviar pregunta:', err)
-
-    messages.value.push({
-      id: messages.value.length + 1,
-      sender: 'assistant',
-      text: '❌ Error al procesar tu pregunta. Por favor intenta de nuevo.',
-      timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-    })
-
-    $q.notify({ type: 'negative', message: 'Error al enviar la pregunta' })
-  } finally {
-    loading.value = false
-  }
 }
 </script>
 

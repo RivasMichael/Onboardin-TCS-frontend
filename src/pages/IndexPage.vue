@@ -8,8 +8,7 @@
         <!-- Header -->
         <q-card-section>
           <div class="column items-center q-gutter-y-md q-mb-md">
-            <q-avatar size="80px" font-size="48px" color="primary" text-color="white" icon="o_chat" />
-            <div class="text-h5 text-weight-bold">BIENVENIDO AL ONBOARDING</div>
+            <q-img src="/images/LOGITO.png" style="width: 280px;" />
             <p class="text-subtitle1 text-grey-8 text-center">Ingresa con tu correo corporativo para continuar</p>
           </div>
         </q-card-section>
@@ -56,15 +55,15 @@ async function handleLogin(credentials) {
   try {
     // Llamar al backend con las credenciales
     const resp = await auth.login(credentials)
-    
+
     // El backend devuelve usuario.rol: "admin" o "usuario"
     const rol = resp.usuario?.rol?.toLowerCase() || ''
-    
-    $q.notify({ 
-      type: 'positive', 
-      message: `Bienvenido ${resp.usuario?.nombre || 'Usuario'}` 
+
+    $q.notify({
+      type: 'positive',
+      message: `Bienvenido ${resp.usuario?.nombre || 'Usuario'}`
     })
-    
+
     // Redirigir según el rol
     if (rol === 'admin') {
       router.push('/admin')
@@ -73,12 +72,12 @@ async function handleLogin(credentials) {
     }
   } catch (err) {
     console.error('Login error', err)
-    
+
     // Manejo de errores del backend
     const msg = err.response?.data?.message || err.message || 'Error al iniciar sesión'
-    $q.notify({ 
-      type: 'negative', 
-      message: msg 
+    $q.notify({
+      type: 'negative',
+      message: msg
     })
   } finally {
     loading.value = false

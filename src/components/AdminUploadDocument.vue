@@ -4,7 +4,16 @@
       <div class="text-h6 q-mb-md">Subir PDF con descripción</div>
       <q-input filled v-model="titulo" label="Título" :rules="[val => !!val || 'Requerido']" class="q-mb-md" />
       <q-input filled v-model="descripcion" label="Descripción" type="textarea" :rules="[val => !!val || 'Requerido']" class="q-mb-md" />
-      <q-input filled v-model="categoria" label="Categoría" :rules="[val => !!val || 'Requerido']" class="q-mb-md" />
+      <q-select
+        filled
+        v-model="categoria"
+        label="Categoría"
+        :options="categoriaOptions"
+        :rules="[val => !!val || 'Requerido']"
+        class="q-mb-md"
+        emit-value
+        map-options
+      />
       <q-toggle v-model="visibleTodos" label="Visible para todos" class="q-mb-md" />
       <q-toggle v-model="obligatorio" label="Obligatorio" class="q-mb-md" />
       <q-file filled v-model="file" label="Seleccionar PDF" accept="application/pdf" :rules="[val => !!val || 'Archivo requerido']" class="q-mb-md" />
@@ -26,6 +35,13 @@ const $q = useQuasar()
 const titulo = ref('')
 const descripcion = ref('')
 const categoria = ref('')
+const categoriaOptions = [
+  'Onboarding',
+  'Seguridad',
+  'Herramientas',
+  'Recursos Humanos',
+  'Políticas'
+]
 const visibleTodos = ref(true)
 const obligatorio = ref(true)
 const file = ref(null)
