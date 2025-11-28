@@ -1,18 +1,26 @@
 <template>
   <q-page class="q-pa-md bg-grey-1">
-
     <!-- Encabezado y Botón de Acción -->
     <div class="row justify-between items-center q-mb-md">
       <div>
         <div class="text-h6 text-weight-bold">Gestión de Documentos</div>
-        <div class="text-subtitle2 text-grey-8">Administra los documentos disponibles para nuevos ingresantes</div>
+        <div class="text-subtitle2 text-grey-8">
+          Administra los documentos disponibles para nuevos ingresantes
+        </div>
       </div>
-      <q-btn unelevated color="dark" icon="add" label="Nuevo Documento" no-caps @click="openCreateDialog" />
+      <q-btn
+        unelevated
+        color="dark"
+        icon="add"
+        label="Nuevo Documento"
+        no-caps
+        @click="openCreateDialog"
+      />
     </div>
 
     <!-- Filtros -->
     <q-card flat bordered class="q-pa-sm q-mb-lg">
-       <div class="row q-gutter-md items-center">
+      <div class="row q-gutter-md items-center">
         <q-input
           v-model="searchQuery"
           placeholder="Buscar documentos..."
@@ -48,16 +56,25 @@
                 <div class="text-weight-bold">{{ doc.name }}</div>
                 <div class="q-gutter-sm q-mt-xs">
                   <q-chip dense outline color="primary">{{ doc.category }}</q-chip>
-                  <q-chip dense outline :color="doc.type === 'Enlace' ? 'orange' : 'grey-7'">{{ doc.type }}</q-chip>
+                  <q-chip dense outline :color="doc.type === 'Enlace' ? 'orange' : 'grey-7'">
+                    {{ doc.type }}
+                  </q-chip>
                 </div>
               </div>
               <q-btn-group flat>
                 <q-btn flat dense icon="o_edit" />
-                <q-btn flat dense icon="o_delete" @click="confirmDelete(doc)"/>
+                <q-btn flat dense icon="o_delete" @click="confirmDelete(doc)" />
               </q-btn-group>
             </div>
             <p class="q-mt-sm text-grey-8 text-caption">{{ doc.description }}</p>
-            <a v-if="doc.type === 'Enlace'" :href="doc.url" target="_blank" class="text-primary text-caption ellipsis">{{ doc.url }}</a>
+            <a
+              v-if="doc.type === 'Enlace'"
+              :href="doc.url"
+              target="_blank"
+              class="text-primary text-caption ellipsis"
+            >
+              {{ doc.url }}
+            </a>
           </q-card-section>
         </q-card>
       </div>
@@ -67,51 +84,49 @@
     <q-dialog v-model="showDialog">
       <AdminUploadDocument @close="showDialog = false" @uploaded="onDocumentUploaded" />
     </q-dialog>
-
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useQuasar } from 'quasar';
-import AdminUploadDocument from 'src/components/AdminUploadDocument.vue';
-import { api } from 'src/boot/axios';
+import { ref, computed, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
+import AdminUploadDocument from 'src/components/AdminUploadDocument.vue'
+import { api } from 'src/boot/axios'
 
-defineOptions({ name: 'AdminDocumentsPage' });
+defineOptions({ name: 'AdminDocumentsPage' })
 
-const $q = useQuasar();
+const $q = useQuasar()
 
 // --- Documentos desde API ---
-const documents = ref([]);
-const loadingDocs = ref(false);
+const documents = ref([])
+const loadingDocs = ref(false)
 
 async function loadDocuments() {
-  loadingDocs.value = true;
+  loadingDocs.value = true
   try {
-    const response = await api.get('/documentos');
-    documents.value = response.data.map(doc => ({
+    const response = await api.get('/documentos')
+    documents.value = response.data.map((doc) => ({
       id: doc.id,
       name: doc.titulo,
       description: doc.descripcion,
       category: doc.categoria,
       size: doc.tamanoArchivo,
       createdAt: doc.creadoEn,
-      // type y url pueden ser null o calculados si lo necesitas
       type: 'PDF',
-      url: null
-    }));
+      url: null,
+    }))
   } catch {
-    $q.notify({ type: 'negative', message: 'Error al cargar documentos' });
+    $q.notify({ type: 'negative', message: 'Error al cargar documentos' })
   } finally {
-    loadingDocs.value = false;
+    loadingDocs.value = false
   }
 }
 
-onMounted(loadDocuments);
+onMounted(loadDocuments)
 
 // --- Filtros y Búsqueda ---
-const searchQuery = ref('');
-const categoryFilter = ref('all');
+const searchQuery = ref('')
+const categoryFilter = ref('all')
 const categoryOptions = [
   { label: 'Todas las categorías', value: 'all' },
   { label: 'Onboarding', value: 'Onboarding' },
@@ -119,30 +134,32 @@ const categoryOptions = [
   { label: 'Herramientas', value: 'Herramientas' },
   { label: 'Recursos Humanos', value: 'Recursos Humanos' },
   { label: 'Políticas', value: 'Políticas' },
-];
+]
 
 const filteredDocuments = computed(() => {
-  return documents.value.filter(doc => {
-    const searchMatch = doc.name.toLowerCase().includes(searchQuery.value.toLowerCase());
-    const categoryMatch = categoryFilter.value === 'all' || doc.category === categoryFilter.value;
-    return searchMatch && categoryMatch;
-  });
-});
+  return documents.value.filter((doc) => {
+    const searchMatch = doc.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const categoryMatch = categoryFilter.value === 'all' || doc.category === categoryFilter.value
+    return searchMatch && categoryMatch
+  })
+})
 
 // --- Lógica de Creación/Edición ---
-const showDialog = ref(false);
-
+const showDialog = ref(false)
 
 function openCreateDialog() {
-  showDialog.value = true;
+  showDialog.value = true
 }
 
 async function onDocumentUploaded() {
-  showDialog.value = false;
-  await loadDocuments();
-  $q.notify({ color: 'positive', message: 'Documento subido y listado actualizado', icon: 'o_check' });
+  showDialog.value = false
+  await loadDocuments()
+  $q.notify({
+    color: 'positive',
+    message: 'Documento subido y listado actualizado',
+    icon: 'o_check',
+  })
 }
-
 
 // --- Lógica de Eliminación ---
 function confirmDelete(doc) {
@@ -151,23 +168,30 @@ function confirmDelete(doc) {
     message: `¿Estás seguro de eliminar "${doc.name}"?`,
     cancel: {
       label: 'Cancelar',
-      flat: true
+      flat: true,
     },
     ok: {
       label: 'Aceptar',
       color: 'primary',
-      flat: true
+      flat: true,
     },
-    persistent: true
+    persistent: true,
   }).onOk(async () => {
     try {
-      await api.delete(`/documentos/${doc.id}`);
-      await loadDocuments();
-      $q.notify({ color: 'positive', message: 'Documento eliminado correctamente', icon: 'o_check' });
+      await api.delete(`/documentos/${doc.id}`)
+      await loadDocuments()
+      $q.notify({
+        color: 'positive',
+        message: 'Documento eliminado correctamente',
+        icon: 'o_check',
+      })
     } catch {
-      $q.notify({ color: 'negative', message: 'Error al eliminar el documento', icon: 'o_block' });
+      $q.notify({
+        color: 'negative',
+        message: 'Error al eliminar el documento',
+        icon: 'o_block',
+      })
     }
-  });
+  })
 }
-
 </script>
